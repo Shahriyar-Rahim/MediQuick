@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 
-// This sub-component handles the click logic
 function ClickHandler({ setPosition }) {
   useMapEvents({
     click(e) {
-      // e.latlng contains the latitude and longitude of the click
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
       console.log(`Selected Location: ${lat}, ${lng}`);
@@ -15,7 +13,7 @@ function ClickHandler({ setPosition }) {
 }
 
 const AddMedicineMap = () => {
-  const [position, setPosition] = useState(null); // Stores the pinned location
+  const [position, setPosition] = useState(null); 
 
   return (
     <div className="space-y-4">
