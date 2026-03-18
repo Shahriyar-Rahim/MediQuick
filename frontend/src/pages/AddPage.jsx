@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import api from "../api/axios";
 import {
   Pill, Store, Link2, MapPin, Upload, Loader2,
-  CheckCircle, Info, Plus, X,
+  CheckCircle, Info, Plus, X, Locate,
 } from "lucide-react";
 
 // Fix Leaflet icon
@@ -218,6 +218,28 @@ const AddShopForm = () => {
   const [preview, setPreview] = useState(null);
   const [submitting, setSub]  = useState(false);
   const [done, setDone]       = useState(null);
+  const [locating, setLocating] = useState(false);
+
+  const handleLocate = () => {
+    setLocating(true);
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords: c }) => {
+        setCoords({ lat: c.latitude, lng: c.longitude });
+        setLocating(false);
+      },
+      () => {
+        toast.error("Could not get your location");
+        setLocating(false);
+      }
+    );
+  };
+  const FlyToLocation = ({ coords }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords) map.flyTo([coords.lat, coords.lng], 16, { animate: true, duration: 1 });
+  }, [coords]);
+  return null;
+};
 
   const handleImg = (e) => {
     const f = e.target.files[0];
@@ -271,9 +293,18 @@ const AddShopForm = () => {
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; OSM' />
             <MapClickHandler onPick={(lat, lng) => setCoords({ lat, lng })} />
+            <FlyToLocation coords={coords} />
             {coords && <Marker position={[coords.lat, coords.lng]} icon={pinIcon} />}
           </MapContainer>
         </div>
+        <button type="button" onClick={handleLocate} disabled={locating}
+          className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20
+                     border border-emerald-500/30 text-emerald-400 text-xs rounded-lg
+                     transition-colors disabled:opacity-50">
+          {locating
+            ? <><Loader2 size={11} className="animate-spin" /> Locating...</>
+            : <><Locate size={11} /> Locate Me</>}
+        </button>
         {coords ? (
           <p className="flex items-center gap-1.5 text-emerald-400 text-xs mt-1.5">
             <MapPin size={11} />
