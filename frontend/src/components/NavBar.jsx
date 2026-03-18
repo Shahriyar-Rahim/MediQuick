@@ -12,7 +12,7 @@ import {
   Activity,
 } from "lucide-react";
 
-const Navbar = () => {
+const NavBar = () => {
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -153,4 +153,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default NavBar;

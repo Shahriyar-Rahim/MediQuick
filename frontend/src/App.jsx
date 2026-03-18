@@ -4,7 +4,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Navbar from "./components/Navbar";
+import NavBar from "./components/NavBar";
 import Footer from "./components/Footer";
 
 // Pages — public
@@ -19,10 +19,10 @@ import AddPage        from "./pages/AddPage";
 import LoginPage      from "./pages/admin/LoginPage";
 import DashboardPage  from "./pages/admin/DashboardPage";
 
-// Layout wrapper — Navbar + main content + Footer
+// Layout wrapper — NavBar + main content + Footer
 const Layout = ({ children }) => (
   <div className="min-h-screen flex flex-col bg-slate-950">
-    <Navbar />
+    <NavBar />
     <main className="flex-1">{children}</main>
     <Footer />
   </div>
