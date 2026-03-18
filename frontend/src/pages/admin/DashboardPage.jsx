@@ -7,7 +7,7 @@ import {
   Pill, Store, FileText, BarChart3, ShieldAlert,
   TrendingUp, Activity, RefreshCw, ChevronRight,
   AlertTriangle, BadgeCheck, ThumbsDown, PackageX,
-  Users, LogOut, Star, Shield, Loader2, Trash2,FileText,
+  Users, LogOut, Star, Shield, Loader2, Trash2,
 } from "lucide-react";
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
