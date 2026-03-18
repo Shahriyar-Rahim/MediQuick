@@ -39,6 +39,7 @@ const errorHandler = (err, req, res, next) => {
     // only show stack in development
     ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
+   console.error("ERROR:", err.message, err.stack);
 };
 
 export default errorHandler;
