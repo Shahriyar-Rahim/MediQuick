@@ -1,7 +1,7 @@
 import Vote from "../models/vote.model.js";
 import MedicineEntry from "../models/medicineEntry.model.js";
 import Shop from "../models/shop.model.js";
-import getHashedIp from "../utils/ipHelper.js";
+import { getHashedIp} from "../utils/ipHelper.js";
 
 // @desc    Vote on a medicine entry price — correct or incorrect (public)
 // @route   POST /api/votes/price/:entryId
