@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import api from "../api/axios";
+import HomeAnalytics from "../components/HomeAnalytics";
 import {
   Search, Locate, TrendingUp, AlertTriangle, Trophy,
   BadgeCheck, ThumbsUp, ThumbsDown, ChevronRight,
@@ -444,6 +445,9 @@ const HomePage = () => {
               <ChevronRight size={13} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
             </button>
           ))}
+        </div>
+        <div className="border-t border-slate-800 pt-6">
+          <HomeAnalytics />
         </div>
       </div>
     </div>
