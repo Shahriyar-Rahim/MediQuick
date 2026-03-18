@@ -57,6 +57,10 @@ app.use("/api/admin/accounts", adminRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/admin/dashboard", dashboardRouter);
 
+app.get("/", (req, res) => {
+    res.send("Hello from Medi-Quick!");
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
