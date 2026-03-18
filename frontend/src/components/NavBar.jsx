@@ -1,53 +1,154 @@
-import React from 'react';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
+import {
+  Plus,
+  LayoutDashboard,
+  LogOut,
+  Shield,
+  Star,
+  Menu,
+  X,
+  Activity,
+} from "lucide-react";
 
 const Navbar = () => {
+  const { admin, logout } = useAuth();
+  const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+    setMobileOpen(false);
+  };
+
   return (
-    <nav className="w-full flex flex-col">
-      {/* Top Black Bar */}
-      <div className="bg-[#1e293b] text-white px-6 py-2 flex justify-between items-center gap-4">
-        
-        {/* 1. Logo Section */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="p-1.5 rounded">
-            <img className='size-8 rounded-2xl' src="./logo.png" alt="medi-quick-logo" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-amber-400 hidden sm:block">
-            Medi-Quick
-          </span>
-        </div>
+    <nav className="sticky top-0 z-50 bg-slate-900 border-b border-slate-800 shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-14">
 
-        {/* 2. Centered Search Bar */}
-        <div className="flex-1 flex justify-center max-w-2xl">
-          <div className="w-full relative">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          {/* Brand */}
+          <Link
+            to="/"
+            className="flex items-center gap-2 group"
+            onClick={() => setMobileOpen(false)}
+          >
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-md group-hover:bg-emerald-400 transition-colors">
+              <Activity size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <input
-              type="text"
-              placeholder="Search medicine..."
-              className="w-full py-1.5 pl-10 pr-4 rounded-md bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
-            />
+            <span className="text-white font-bold text-lg tracking-tight">
+              Medi<span className="text-emerald-400">-Quick</span>
+            </span>
+          </Link>
+
+          {/* Desktop actions */}
+          <div className="hidden sm:flex items-center gap-2">
+            <Link
+              to="/add"
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-lg transition-colors shadow"
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              Add Medicine
+            </Link>
+
+            {admin ? (
+              <div className="flex items-center gap-2">
+                {/* Admin badge */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                  {admin.role === "superadmin" ? (
+                    <Star size={13} className="text-yellow-400" fill="currentColor" />
+                  ) : (
+                    <Shield size={13} className="text-emerald-400" />
+                  )}
+                  <span className="text-slate-200 text-xs font-medium">{admin.name}</span>
+                </div>
+
+                <Link
+                  to="/admin/dashboard"
+                  className="flex items-center gap-1.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 text-sm font-medium rounded-lg transition-colors"
+                >
+                  <LayoutDashboard size={15} />
+                  Dashboard
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 text-sm font-medium rounded-lg transition-colors"
+                >
+                  <LogOut size={15} />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/admin/login"
+                className="flex items-center gap-1.5 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 text-sm font-medium rounded-lg transition-colors border border-slate-700"
+              >
+                <Shield size={14} />
+                Admin Login
+              </Link>
+            )}
           </div>
-        </div>
 
-        {/* 3. Action Buttons */}
-        <div className="flex items-center gap-4 shrink-0">
-          <button className="bg-[#4ade80] hover:bg-[#22c55e] text-[#064e3b] px-3 py-1.5 rounded-md font-semibold text-xs transition-colors whitespace-nowrap">
-            Add Medicine
-          </button>
-          <button className="text-gray-300 hover:text-white text-xs font-medium whitespace-nowrap">
-            Admin Login
+          {/* Mobile hamburger */}
+          <button
+            className="sm:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* Blue Gradient Section (Now just a header/banner) */}
-      <div className="bg-linear-to-b from-[#3b82f6] to-[#60a5fa] w-full h-8 flex items-center justify-center px-4">
-        <div className="flex w-1/2 justify-center gap-2"><h2 className="text-white font-medium">Your Nearest Pharmacies</h2></div>
-        <div className="flex w-1/2 justify-center gap-2"><h2 className="text-white font-medium">Dashboard</h2></div>
-      </div>
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="sm:hidden border-t border-slate-800 bg-slate-900 px-4 py-3 flex flex-col gap-2">
+          <Link
+            to="/add"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-lg"
+          >
+            <Plus size={15} /> Add Medicine
+          </Link>
+
+          {admin ? (
+            <>
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg border border-slate-700">
+                {admin.role === "superadmin" ? (
+                  <Star size={13} className="text-yellow-400" fill="currentColor" />
+                ) : (
+                  <Shield size={13} className="text-emerald-400" />
+                )}
+                <span className="text-slate-200 text-sm font-medium">{admin.name}</span>
+                <span className="ml-auto text-xs text-slate-500 capitalize">{admin.role}</span>
+              </div>
+              <Link
+                to="/admin/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 text-slate-300 hover:bg-slate-800 text-sm rounded-lg transition-colors"
+              >
+                <LayoutDashboard size={15} /> Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2.5 text-rose-400 hover:bg-rose-950/40 text-sm rounded-lg transition-colors text-left"
+              >
+                <LogOut size={15} /> Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/admin/login"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 text-slate-300 hover:bg-slate-800 text-sm rounded-lg border border-slate-700"
+            >
+              <Shield size={14} /> Admin Login
+            </Link>
+          )}
+        </div>
+      )}
     </nav>
   );
 };

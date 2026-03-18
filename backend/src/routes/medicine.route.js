@@ -3,14 +3,14 @@ import medicineController from "../controllers/medicine.controller.js";
 
 const router = express.Router();
 
-router.post("/add", medicineController.addMedicine);
-router.get("/medicines", medicineController.getAllMedicines);
-router.get("/medicines/search", medicineController.searchMedicines);
-router.get("/medicines/:id", medicineController.getMedicine);
-router.patch("/medicines/:id", medicineController.updateMedicine);
-router.patch("/medicines/:id/image", medicineController.updateMedicineImage);
-router.patch("/medicines/:id/block", medicineController.toggleBlockMedicine);
-router.delete("/medicines/:id", medicineController.deleteMedicine);
-router.get("/medicines/admin", medicineController.getAllMedicinesAdmin);
+router.post("/", medicineController.addMedicine);
+router.get("/", medicineController.getAllMedicines);
+router.get("/search", medicineController.searchMedicines);
+router.get("/:id", medicineController.getMedicine);
+router.patch("/:id", medicineController.updateMedicine);
+router.patch("/:id/image", medicineController.updateMedicineImage);
+router.patch("/:id/block", medicineController.toggleBlockMedicine);
+router.delete("/:id", medicineController.deleteMedicine);
+router.get("/admin/all", medicineController.getAllMedicinesAdmin);
 
 export default router;

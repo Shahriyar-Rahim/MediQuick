@@ -327,8 +327,30 @@ const getAllEntriesAdmin = async (req, res, next) => {
   }
 };
 
+const getAllEntries = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const page  = parseInt(req.query.page)  || 1;
+    const skip  = (page - 1) * limit;
+
+    const [entries, total] = await Promise.all([
+      MedicineEntry.find({ isBlocked: false })
+        .populate("medicine", "genericName brandNames category image")
+        .populate("shop", "name address")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      MedicineEntry.countDocuments({ isBlocked: false }),
+    ]);
+
+    res.status(200).json({ success: true, total, page, data: entries });
+  } catch (error) {
+    next(error);
+  }
+};
 const medicineEntryController = {
   addEntry,
+  getAllEntries,
   getEntriesByMedicine,
   getEntriesByShop,
   getEntry,

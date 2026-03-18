@@ -24,6 +24,7 @@ const app = express();
 
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true
 }));
 app.use(express.json());
@@ -33,11 +34,11 @@ app.use(express.urlencoded({ extended: true }));
 connectDB();
 
 app.use("/api/auth", authRouter);
-app.use("/api/medicine", medicineRouter);
-app.use("/api/medicineEntry", medicineEntryRouter);
-app.use("/api/shop", shopRouter);
-app.use("/api/vote", voteRouter);
-app.use("/api/admin", adminRouter);
+app.use("/api/medicines", medicineRouter);
+app.use("/api/entries", medicineEntryRouter);
+app.use("/api/shops", shopRouter);
+app.use("/api/votes", voteRouter);
+app.use("/api/admin/accounts", adminRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/admin/dashboard", dashboardRouter);
 
