@@ -1,5 +1,4 @@
-const crypto = require("crypto");
-
+import crypto from "crypto";
 /**
  * Extract the real IP from request.
  * Works behind proxies (nginx, Render, Railway, etc.)
@@ -23,4 +22,5 @@ const getHashedIp = (req) => {
   return crypto.createHmac("sha256", salt).update(raw).digest("hex");
 };
 
-module.exports = { getRawIp, getHashedIp };
+const ipHelper = { getRawIp, getHashedIp };
+export default ipHelper;

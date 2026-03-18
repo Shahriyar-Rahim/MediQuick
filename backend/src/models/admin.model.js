@@ -31,7 +31,7 @@ const adminSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 adminSchema.pre("save", async function () {

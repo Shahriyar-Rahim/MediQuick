@@ -1,5 +1,6 @@
 import Shop from "../models/shop.model.js";
 
+
 // @desc    Add a new shop (public — coordinates come from Leaflet map click)
 // @route   POST /api/shops
 // @access  Public
@@ -242,3 +243,17 @@ const getAllShopsAdmin = async (req, res, next) => {
     next(error);
   }
 };
+
+const shopController = {
+  addShop,
+  getNearbyShops,
+  getAllShops,
+  getShop,
+  updateShop,
+  updateShopImage,
+  toggleBlockShop,
+  deleteShop,
+  getAllShopsAdmin,
+};
+ 
+export default shopController;
