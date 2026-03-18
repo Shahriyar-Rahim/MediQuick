@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
+import AdminFeedback from "../../components/AdminFeedback";
 import {
   Pill, Store, FileText, BarChart3, ShieldAlert,
   TrendingUp, Activity, RefreshCw, ChevronRight,
@@ -758,6 +759,7 @@ const DashboardPage = () => {
           }>
           <EntriesAdminList onRefresh={() => fetchAll(true)} navigate={navigate} />
         </Section>
+        <AdminFeedback />
       </div>
     </div>
   );
