@@ -1,4 +1,6 @@
-export const getBaseUrl = () => {
-    // return "https://mern-stack-ecommerce-backend-xi.vercel.app";
-    return "http://localhost:5000";
+const getBaseUrl = () => {
+    return "https://medi-quick-demo.vercel.app/";
+    // return "http://localhost:5173";
 }
+
+export default getBaseUrl

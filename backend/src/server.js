@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import cors from "cors";
 import dns from "dns";
+import baseUrl from "./utils/getBaseUrl.js";
 import connectDB from "./config/db.config.js";
 import errorHandler from "./middlewares/errorHandler.js";
 
@@ -23,7 +24,7 @@ const port = process.env.PORT;
 const app = express();
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: baseUrl(),
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     credentials: true
 }));
