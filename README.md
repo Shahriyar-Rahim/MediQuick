@@ -3,7 +3,7 @@
 
 ![Medi-Quick Hero Screenshot](./public/screenshot.png)
 
-> **Live Demo:** [medi-quick-demo.vercel.app](https://medi-quick-demo.vercel.app/)  
+> **Live Demo:** [medi-quick-fawn.vercel.app](https://medi-quick-fawn.vercel.app/)  
 > **Developed by:** Md. Shahriyar Rahim  
 > **Designed by:** Shammi Ayeman Mantasa  
 > **Institution:** Bangladesh Army University of Science & Technology (BAUST)  
