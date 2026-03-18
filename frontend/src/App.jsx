@@ -12,6 +12,7 @@ import HomePage       from "./pages/HomePage";
 import MedicinesPage  from "./pages/MedicinesPage";
 import MedicinePage   from "./pages/MedicinePage";
 import ShopPage       from "./pages/ShopPage";
+import ShopsPage from "./pages/ShopsPage";
 import AddPage        from "./pages/AddPage";
 
 // Pages — admin
@@ -66,6 +67,10 @@ const App = () => {
           <Route
             path="/shops/:id"
             element={<Layout><ShopPage /></Layout>}
+          />
+          <Route
+            path="/shops"
+            element={<Layout><ShopsPage /></Layout>}
           />
           <Route
             path="/add"
