@@ -7,7 +7,7 @@ import {
   Pill, Store, FileText, BarChart3, ShieldAlert,
   TrendingUp, Activity, RefreshCw, ChevronRight,
   AlertTriangle, BadgeCheck, ThumbsDown, PackageX,
-  Users, LogOut, Star, Shield, Loader2, Trash2,
+  Users, LogOut, Star, Shield, Loader2, Trash2,FileText,
 } from "lucide-react";
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
@@ -283,6 +283,113 @@ const ShopsAdminList = ({ onRefresh, navigate }) => {
           <span className="text-slate-600 text-xs">Page {page}</span>
           <button disabled={page * 10 >= total}
             onClick={() => { setPage(page + 1); fetchShops(page + 1); }}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
+                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Entries admin list ────────────────────────────────────────────────────────
+const EntriesAdminList = ({ onRefresh, navigate }) => {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page,    setPage]    = useState(1);
+  const [total,   setTotal]   = useState(0);
+
+  const fetchEntries = async (p = 1) => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/entries/admin/all?page=${p}&limit=10`);
+      setEntries(data.data || []);
+      setTotal(data.total || 0);
+    } catch {
+      toast.error("Failed to load entries");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchEntries(); }, []);
+
+  if (loading) return (
+    <div className="space-y-2 animate-pulse">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-slate-800 rounded-lg" />)}
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <p className="text-slate-600 text-xs mb-3">{total} total entries</p>
+      {entries.length === 0 ? (
+        <p className="text-slate-600 text-sm text-center py-4">No entries yet</p>
+      ) : entries.map((entry) => (
+        <div key={entry._id}
+          className="flex items-center justify-between gap-3 px-3 py-2.5
+                     bg-slate-800/40 rounded-xl flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText size={12} className="text-amber-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-slate-200 text-sm font-medium capitalize truncate">
+                {entry.medicine?.genericName || "—"}
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-slate-500 text-xs">{entry.shop?.name || "—"}</p>
+                <span className="text-slate-700 text-xs">·</span>
+                <p className="text-emerald-400 text-xs font-medium">৳{entry.price?.toFixed(2)}</p>
+                <span className="text-slate-700 text-xs">·</span>
+                {entry.isAvailable ? (
+                  <span className="text-emerald-400 text-xs">in stock</span>
+                ) : (
+                  <span className="text-rose-400 text-xs">out of stock</span>
+                )}
+                <span className="text-slate-700 text-xs">·</span>
+                <span className="text-slate-600 text-xs capitalize">
+                  by {entry.addedBy || "user"}
+                </span>
+              </div>
+            </div>
+            {entry.isBlocked && (
+              <span className="text-xs text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                blocked
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => navigate(`/medicines/${entry.medicine?._id}`)}
+              className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 border border-slate-600
+                         text-slate-400 hover:text-white text-xs rounded-lg transition-colors">
+              View
+            </button>
+            <BlockBtn
+              route={`/entries/${entry._id}/block`}
+              label={entry.isBlocked ? "Unblock" : "Block"}
+              onDone={() => fetchEntries(page)}
+            />
+            <DeleteBtn
+              route={`/entries/${entry._id}`}
+              label="entry"
+              onDone={() => { fetchEntries(page); onRefresh(); }}
+            />
+          </div>
+        </div>
+      ))}
+
+      {total > 10 && (
+        <div className="flex items-center justify-between pt-2">
+          <button disabled={page === 1}
+            onClick={() => { setPage(page - 1); fetchEntries(page - 1); }}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
+                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Prev
+          </button>
+          <span className="text-slate-600 text-xs">Page {page} of {Math.ceil(total / 10)}</span>
+          <button disabled={page * 10 >= total}
+            onClick={() => { setPage(page + 1); fetchEntries(page + 1); }}
             className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
                        hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
             Next
@@ -640,6 +747,16 @@ const DashboardPage = () => {
             </button>
           }>
           <ShopsAdminList onRefresh={() => fetchAll(true)} navigate={navigate} />
+        </Section>
+
+        {/* ── Medicine Entries management ────────────────────────────────── */}
+        <Section icon={FileText} title="Medicine Entries" accent="amber"
+          action={
+            <span className="text-xs text-slate-600">
+              user & admin submitted
+            </span>
+          }>
+          <EntriesAdminList onRefresh={() => fetchAll(true)} navigate={navigate} />
         </Section>
       </div>
     </div>
