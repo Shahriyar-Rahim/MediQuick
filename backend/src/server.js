@@ -15,6 +15,7 @@ import voteRouter from "./routes/vote.route.js";
 import adminRouter from "./routes/admin.route.js";
 import uploadRouter from "./routes/upload.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
+import feedbackRouter from "./routes/feedback.route.js";
 
 // dns.setServers(['8.8.8.8', '1.1.1.1'])
 
@@ -56,6 +57,7 @@ app.use("/api/votes", voteRouter);
 app.use("/api/admin/accounts", adminRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/admin/dashboard", dashboardRouter);
+app.use("/api/feedback", feedbackRouter);
 
 app.get("/", (req, res) => {
     res.send("Hello from Medi-Quick!");
