@@ -26,16 +26,23 @@ const app = express();
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
   : [];
-
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Postman / server-to-server
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS blocked: ${origin}`));
+    // Allow all during debugging — tighten later
+    return callback(null, true);
   },
   methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
   credentials: true,
 }));
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     if (!origin) return callback(null, true); // Postman / server-to-server
+//     if (allowedOrigins.includes(origin)) return callback(null, true);
+//     return callback(new Error(`CORS blocked: ${origin}`));
+//   },
+//   methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+//   credentials: true,
+// }));
 
 // app.use(cors({
 //     origin: baseUrl(),
