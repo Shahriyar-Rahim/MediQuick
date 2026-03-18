@@ -7,7 +7,7 @@ import {
   Pill, Store, FileText, BarChart3, ShieldAlert,
   TrendingUp, Activity, RefreshCw, ChevronRight,
   AlertTriangle, BadgeCheck, ThumbsDown, PackageX,
-  Users, LogOut, Star, Shield, Loader2,
+  Users, LogOut, Star, Shield, Loader2, Trash2,
 } from "lucide-react";
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
@@ -93,6 +93,203 @@ const BlockBtn = ({ route, label = "Block", onDone }) => {
       {busy ? <Loader2 size={10} className="animate-spin" /> : null}
       {label}
     </button>
+  );
+};
+
+const DeleteBtn = ({ route, label = "Delete", onDone }) => {
+  const [busy, setBusy] = useState(false);
+  const handle = async () => {
+    if (!confirm(`Are you sure you want to delete this ${label.toLowerCase()}?`)) return;
+    setBusy(true);
+    try {
+      await api.delete(route);
+      toast.success("Deleted");
+      onDone?.();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button onClick={handle} disabled={busy}
+      className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/50
+                 border border-rose-800/50 text-rose-400 text-xs rounded-lg transition-colors disabled:opacity-50">
+      {busy ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+      Delete
+    </button>
+  );
+};
+
+// ── Medicines admin list ──────────────────────────────────────────────────────
+const MedicinesAdminList = ({ onRefresh, navigate }) => {
+  const [medicines, setMedicines] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [page,      setPage]      = useState(1);
+  const [total,     setTotal]     = useState(0);
+
+  const fetchMeds = async (p = 1) => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/medicines/admin/all?page=${p}&limit=10`);
+      setMedicines(data.data || []);
+      setTotal(data.total || 0);
+    } catch {
+      toast.error("Failed to load medicines");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchMeds(); }, []);
+
+  if (loading) return (
+    <div className="space-y-2 animate-pulse">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-800 rounded-lg" />)}
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <p className="text-slate-600 text-xs mb-3">{total} total medicines</p>
+      {medicines.map((med) => (
+        <div key={med._id}
+          className="flex items-center justify-between gap-3 px-3 py-2.5 bg-slate-800/40 rounded-xl flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <Pill size={12} className="text-emerald-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-slate-200 text-sm font-medium capitalize truncate">{med.genericName}</p>
+              <p className="text-slate-600 text-xs capitalize">{med.category}</p>
+            </div>
+            {med.isBlocked && (
+              <span className="text-xs text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full shrink-0">blocked</span>
+            )}
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={() => navigate(`/medicines/${med._id}`)}
+              className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 border border-slate-600
+                         text-slate-400 hover:text-white text-xs rounded-lg transition-colors">
+              View
+            </button>
+            <BlockBtn
+              route={`/medicines/${med._id}/block`}
+              label={med.isBlocked ? "Unblock" : "Block"}
+              onDone={() => fetchMeds(page)}
+            />
+            <DeleteBtn
+              route={`/medicines/${med._id}`}
+              label="medicine"
+              onDone={() => { fetchMeds(page); onRefresh(); }}
+            />
+          </div>
+        </div>
+      ))}
+      {total > 10 && (
+        <div className="flex items-center justify-between pt-2">
+          <button disabled={page === 1}
+            onClick={() => { setPage(page - 1); fetchMeds(page - 1); }}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
+                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Prev
+          </button>
+          <span className="text-slate-600 text-xs">Page {page}</span>
+          <button disabled={page * 10 >= total}
+            onClick={() => { setPage(page + 1); fetchMeds(page + 1); }}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
+                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Shops admin list ──────────────────────────────────────────────────────────
+const ShopsAdminList = ({ onRefresh, navigate }) => {
+  const [shops,   setShops]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page,    setPage]    = useState(1);
+  const [total,   setTotal]   = useState(0);
+
+  const fetchShops = async (p = 1) => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/shops/admin/all?page=${p}&limit=10`);
+      setShops(data.data || []);
+      setTotal(data.total || 0);
+    } catch {
+      toast.error("Failed to load shops");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchShops(); }, []);
+
+  if (loading) return (
+    <div className="space-y-2 animate-pulse">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-slate-800 rounded-lg" />)}
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      <p className="text-slate-600 text-xs mb-3">{total} total shops</p>
+      {shops.map((shop) => (
+        <div key={shop._id}
+          className="flex items-center justify-between gap-3 px-3 py-2.5 bg-slate-800/40 rounded-xl flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <Store size={12} className="text-sky-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-slate-200 text-sm font-medium truncate">{shop.name}</p>
+              {shop.address && <p className="text-slate-600 text-xs truncate">{shop.address}</p>}
+            </div>
+            {shop.isBlocked && (
+              <span className="text-xs text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full shrink-0">blocked</span>
+            )}
+            {shop.isSuspected && !shop.isBlocked && (
+              <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">suspected</span>
+            )}
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={() => navigate(`/shops/${shop._id}`)}
+              className="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 border border-slate-600
+                         text-slate-400 hover:text-white text-xs rounded-lg transition-colors">
+              View
+            </button>
+            <BlockBtn
+              route={`/shops/${shop._id}/block`}
+              label={shop.isBlocked ? "Unblock" : "Block"}
+              onDone={() => fetchShops(page)}
+            />
+            <DeleteBtn
+              route={`/shops/${shop._id}`}
+              label="shop"
+              onDone={() => { fetchShops(page); onRefresh(); }}
+            />
+          </div>
+        </div>
+      ))}
+      {total > 10 && (
+        <div className="flex items-center justify-between pt-2">
+          <button disabled={page === 1}
+            onClick={() => { setPage(page - 1); fetchShops(page - 1); }}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
+                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Prev
+          </button>
+          <span className="text-slate-600 text-xs">Page {page}</span>
+          <button disabled={page * 10 >= total}
+            onClick={() => { setPage(page + 1); fetchShops(page + 1); }}
+            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
+                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Next
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -359,6 +556,7 @@ const DashboardPage = () => {
         </div>
 
         {/* ── Row: trending + activity ───────────────────────────────────── */}
+        {/* ── Row: trending + activity ───────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
           {/* Trending today */}
@@ -391,7 +589,7 @@ const DashboardPage = () => {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {[
-                  ...( activity.recentMedicines || []).map((m) => ({
+                  ...(activity.recentMedicines || []).map((m) => ({
                     type: "medicine", name: m.genericName,
                     label: m.addedBy === "admin" ? "by admin" : "by community",
                     blocked: m.isBlocked, time: m.createdAt,
@@ -421,6 +619,28 @@ const DashboardPage = () => {
             )}
           </Section>
         </div>
+
+        {/* ── Medicines management ──────────────────────────────────────── */}
+        <Section icon={Pill} title="Medicines Management" accent="emerald"
+          action={
+            <button onClick={() => navigate("/medicines")}
+              className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+              View all →
+            </button>
+          }>
+          <MedicinesAdminList onRefresh={() => fetchAll(true)} navigate={navigate} />
+        </Section>
+
+        {/* ── Shops management ──────────────────────────────────────────── */}
+        <Section icon={Store} title="Shops Management" accent="sky"
+          action={
+            <button onClick={() => navigate("/shops")}
+              className="text-xs text-sky-400 hover:text-sky-300 transition-colors">
+              View all →
+            </button>
+          }>
+          <ShopsAdminList onRefresh={() => fetchAll(true)} navigate={navigate} />
+        </Section>
       </div>
     </div>
   );
