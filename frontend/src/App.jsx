@@ -11,7 +11,7 @@ import Footer from "./components/Footer";
 import HomePage       from "./pages/HomePage";
 import MedicinesPage  from "./pages/MedicinesPage";
 import MedicinePage   from "./pages/MedicinePage";
-import ShopPage       from "./pages/ShopPage";
+import ShopPage       from "./pages/ShopPage";  
 import ShopsPage from "./pages/ShopsPage";
 import AddPage        from "./pages/AddPage";
 
