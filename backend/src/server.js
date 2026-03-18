@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import express from "express";
 import cors from "cors";
-import dns from "dns";
+// import dns from "dns";
 import baseUrl from "./utils/getBaseUrl.js";
 import connectDB from "./config/db.config.js";
 import errorHandler from "./middlewares/errorHandler.js";
@@ -16,7 +16,7 @@ import adminRouter from "./routes/admin.route.js";
 import uploadRouter from "./routes/upload.route.js";
 import dashboardRouter from "./routes/dashboard.route.js";
 
-dns.setServers(['8.8.8.8', '1.1.1.1'])
+// dns.setServers(['8.8.8.8', '1.1.1.1'])
 
 dotenv.config();
 
