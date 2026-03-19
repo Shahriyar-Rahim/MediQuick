@@ -21,10 +21,9 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      const { token, ...adminData } = data.data;
-      localStorage.setItem("mq_token", token);
-      localStorage.setItem("mq_admin", JSON.stringify(adminData));
-      setAdmin(adminData);
+      localStorage.setItem("mq_token", data.token);
+localStorage.setItem("mq_admin", JSON.stringify(data.data));
+setAdmin(data.data);
       return { success: true };
     } catch (err) {
       const message = err.response?.data?.message || "Login failed";
