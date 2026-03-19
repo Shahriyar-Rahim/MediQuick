@@ -25,7 +25,7 @@ Rules:
 
 const runGemini = async (base64, mime, apiKey) => {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -270,6 +270,10 @@ const PrescriptionScanner = () => {
           {/* Upload */}
           {!scanning && (
             <>
+              {(showKeyInput || !apiKey) && (
+                
+              )}
+
               {!preview ? (
                 <>
                   <label className="flex flex-col items-center justify-center gap-3 h-52
