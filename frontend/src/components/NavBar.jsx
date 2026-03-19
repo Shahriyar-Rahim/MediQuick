@@ -277,7 +277,7 @@ const NavBar = () => {
               <Activity size={16} className="text-white" strokeWidth={2.5} />
             </div>
             <span className="text-white font-bold text-lg tracking-tight">
-              Medi<span className="text-emerald-400">-Quick</span>
+              Medi<span className="text-emerald-400">Quick</span>
             </span>
           </Link>
 

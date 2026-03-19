@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../api/axios";
 import {
   MessageSquare, Star, Bug, Lightbulb, Heart, HelpCircle,
-  CheckCheck, Trash2, Archive, Loader2, ChevronDown,
-  MailOpen, Mail,
+  CheckCheck, Trash2, Archive, Loader2, MailOpen,
+  X, ChevronLeft, ChevronRight, ExternalLink, Eye,
 } from "lucide-react";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const TYPE_META = {
-  general:    { icon: HelpCircle, color: "text-slate-400",   bg: "bg-slate-700/50"        },
-  suggestion: { icon: Lightbulb,  color: "text-amber-400",   bg: "bg-amber-500/10"        },
-  bug:        { icon: Bug,        color: "text-rose-400",    bg: "bg-rose-500/10"         },
-  praise:     { icon: Heart,      color: "text-emerald-400", bg: "bg-emerald-500/10"      },
+  general:    { icon: HelpCircle, color: "text-slate-400",   bg: "bg-slate-700/50",   label: "General"    },
+  suggestion: { icon: Lightbulb,  color: "text-amber-400",   bg: "bg-amber-500/10",   label: "Suggestion" },
+  bug:        { icon: Bug,        color: "text-rose-400",    bg: "bg-rose-500/10",    label: "Bug"        },
+  praise:     { icon: Heart,      color: "text-emerald-400", bg: "bg-emerald-500/10", label: "Praise"     },
 };
 
 const StarDisplay = ({ value }) => (
@@ -22,49 +23,297 @@ const StarDisplay = ({ value }) => (
   </div>
 );
 
-const AdminFeedback = () => {
+const fmt = (d) => new Date(d).toLocaleString("en-BD", {
+  day: "numeric", month: "short", year: "numeric",
+  hour: "2-digit", minute: "2-digit",
+});
+
+// ── Toast popup for a single feedback ────────────────────────────────────────
+const FeedbackToast = ({ fb, onClose, onAction, busy }) => {
+  const meta = TYPE_META[fb.type] || TYPE_META.general;
+  const Icon = meta.icon;
+  const ref  = useRef(null);
+
+  useEffect(() => {
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  useEffect(() => {
+    const fn = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", fn);
+    return () => document.removeEventListener("keydown", fn);
+  }, []);
+
+  const barColor =
+    fb.type === "bug"        ? "bg-rose-500"    :
+    fb.type === "suggestion" ? "bg-amber-500"   :
+    fb.type === "praise"     ? "bg-emerald-500" : "bg-slate-600";
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-end sm:items-center
+                    justify-center p-4 sm:p-6"
+      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }}>
+      <div ref={ref}
+        className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden"
+        style={{ animation: "fbSlideUp 0.25s ease" }}>
+        <style>{`@keyframes fbSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+        <div className={`h-1 w-full ${barColor}`} />
+
+        {/* Header */}
+        <div className="flex items-start justify-between px-5 pt-4 pb-3">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}`}>
+              <Icon size={16} className={meta.color} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-semibold text-sm">{fb.name}</span>
+                {!fb.isRead && (
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10
+                                   px-1.5 py-0.5 rounded-full border border-emerald-400/20">NEW</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-slate-500 text-xs capitalize">{meta.label}</span>
+                {fb.rating && (
+                  <><span className="text-slate-700 text-xs">·</span><StarDisplay value={fb.rating} /></>
+                )}
+                <span className="text-slate-700 text-xs">·</span>
+                <span className="text-slate-600 text-xs">{fmt(fb.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-800
+                       rounded-lg transition-colors shrink-0 group">
+            <X size={15} className="group-hover:rotate-90 transition-transform duration-150" />
+          </button>
+        </div>
+
+        {/* Message */}
+        <div className="px-5 pb-4">
+          <div className="bg-slate-800/50 rounded-xl px-4 py-3 border border-slate-700/50">
+            <p className="text-slate-200 text-sm leading-relaxed">{fb.message}</p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 px-5 pb-4 flex-wrap">
+          {!fb.isRead && (
+            <button onClick={() => onAction(fb._id, `/feedback/admin/${fb._id}/read`)}
+              disabled={busy[fb._id]}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10
+                         hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400
+                         text-xs font-medium rounded-lg transition-colors">
+              {busy[fb._id] ? <Loader2 size={11} className="animate-spin" /> : <MailOpen size={11} />}
+              Mark Read
+            </button>
+          )}
+          <button onClick={() => onAction(fb._id, `/feedback/admin/${fb._id}/archive`)}
+            disabled={busy[fb._id]}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800
+                       hover:bg-amber-500/10 border border-slate-700 hover:border-amber-500/30
+                       text-slate-400 hover:text-amber-400 text-xs font-medium rounded-lg transition-colors">
+            <Archive size={11} /> Archive
+          </button>
+          <button onClick={() => onAction(fb._id, `/feedback/admin/${fb._id}`, "delete")}
+            disabled={busy[fb._id]}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800
+                       hover:bg-rose-950/50 border border-slate-700 hover:border-rose-500/30
+                       text-slate-400 hover:text-rose-400 text-xs font-medium rounded-lg transition-colors">
+            <Trash2 size={11} /> Delete
+          </button>
+          <button onClick={onClose}
+            className="ml-auto text-slate-500 hover:text-slate-300 text-xs transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── View All modal ────────────────────────────────────────────────────────────
+const ViewAllModal = ({ onClose, onAction, busy }) => {
   const [feedbacks,  setFeedbacks]  = useState([]);
-  const [stats,      setStats]      = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [page,       setPage]       = useState(1);
   const [total,      setTotal]      = useState(0);
+  const [page,       setPage]       = useState(1);
+  const [loading,    setLoading]    = useState(true);
   const [typeFilter, setTypeFilter] = useState("all");
-  const [readFilter, setReadFilter] = useState("all");
-  const [busy,       setBusy]       = useState({});
+  const [selected,   setSelected]   = useState(null);
+  const LIMIT = 5;
+
+  const fetchAll = async (p = 1, type = typeFilter) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: p, limit: LIMIT });
+      if (type !== "all") params.append("type", type);
+      const { data } = await api.get(`/feedback/admin?${params}`);
+      setFeedbacks(data.data || []);
+      setTotal(data.total || 0);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchAll(1, "all"); }, []);
+  useEffect(() => {
+    const fn = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", fn);
+    return () => document.removeEventListener("keydown", fn);
+  }, []);
+
+  const changeType = (t) => { setTypeFilter(t); setPage(1); fetchAll(1, t); };
+  const changePage = (p) => { setPage(p); fetchAll(p); };
+  const totalPages = Math.ceil(total / LIMIT);
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}>
+
+      {selected && (
+        <FeedbackToast
+          fb={selected}
+          onClose={() => { setSelected(null); fetchAll(page); }}
+          onAction={async (id, route, method) => {
+            await onAction(id, route, method);
+            setSelected(null);
+            fetchAll(page);
+          }}
+          busy={busy}
+        />
+      )}
+
+      <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl
+                      shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+        onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
+              <MessageSquare size={14} className="text-emerald-400" />
+            </div>
+            <h2 className="text-white font-semibold text-sm">All Feedback</h2>
+            <span className="text-slate-600 text-xs">({total} total)</span>
+          </div>
+          <button onClick={onClose}
+            className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-800
+                       rounded-lg transition-colors group">
+            <X size={15} className="group-hover:rotate-90 transition-transform duration-150" />
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-1.5 px-5 py-3 border-b border-slate-800 shrink-0 flex-wrap">
+          {["all", "general", "suggestion", "bug", "praise"].map((t) => (
+            <button key={t} onClick={() => changeType(t)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors
+                ${typeFilter === t ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 hover:text-white"}`}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-800">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={20} className="text-emerald-400 animate-spin" />
+            </div>
+          ) : feedbacks.length === 0 ? (
+            <div className="flex flex-col items-center py-12 gap-2">
+              <MessageSquare size={28} className="text-slate-700" />
+              <p className="text-slate-500 text-sm">No feedback found</p>
+            </div>
+          ) : feedbacks.map((fb) => {
+            const meta = TYPE_META[fb.type] || TYPE_META.general;
+            const Icon = meta.icon;
+            return (
+              <button key={fb._id} onClick={() => setSelected(fb)}
+                className={`w-full flex items-start gap-3 px-5 py-3.5 text-left
+                            hover:bg-slate-800/50 transition-colors group
+                            ${!fb.isRead ? "border-l-2 border-emerald-500" : "border-l-2 border-transparent"}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center
+                                 shrink-0 mt-0.5 ${meta.bg}`}>
+                  <Icon size={13} className={meta.color} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="text-white text-sm font-medium">{fb.name}</span>
+                    {!fb.isRead && <span className="text-[10px] font-bold text-emerald-400">NEW</span>}
+                    {fb.rating && <StarDisplay value={fb.rating} />}
+                    <span className="text-slate-600 text-xs capitalize">{meta.label}</span>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">{fb.message}</p>
+                  <p className="text-slate-700 text-xs mt-1">{fmt(fb.createdAt)}</p>
+                </div>
+                <Eye size={13} className="text-slate-700 group-hover:text-slate-400
+                                          shrink-0 mt-1 transition-colors" />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800 shrink-0">
+          <button onClick={() => changePage(page - 1)} disabled={page === 1}
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 border border-slate-700
+                       text-slate-400 hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            <ChevronLeft size={13} /> Prev
+          </button>
+          <span className="text-slate-500 text-xs">
+            Page {page} of {totalPages || 1} · {total} total
+          </span>
+          <button onClick={() => changePage(page + 1)} disabled={page >= totalPages}
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 border border-slate-700
+                       text-slate-400 hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Next <ChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main widget ───────────────────────────────────────────────────────────────
+const AdminFeedback = () => {
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [stats,     setStats]     = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [page,      setPage]      = useState(1);
+  const [total,     setTotal]     = useState(0);
+  const [busy,      setBusy]      = useState({});
+  const [selected,  setSelected]  = useState(null);
+  const [viewAll,   setViewAll]   = useState(false);
+  const LIMIT = 5;
 
   const fetchFeedbacks = async (p = 1) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: p, limit: 10 });
-      if (typeFilter !== "all") params.append("type", typeFilter);
-      if (readFilter !== "all") params.append("isRead", readFilter === "unread" ? "false" : "true");
-
       const [fbRes, statRes] = await Promise.all([
-        api.get(`/feedback/admin?${params}`),
+        api.get(`/feedback/admin?page=${p}&limit=${LIMIT}`),
         api.get("/feedback/admin/stats"),
       ]);
       setFeedbacks(fbRes.data.data || []);
       setTotal(fbRes.data.total    || 0);
       setStats(statRes.data.data);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* silent */ }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchFeedbacks(1); }, [typeFilter, readFilter]);
+  useEffect(() => { fetchFeedbacks(1); }, []);
 
   const action = async (id, route, method = "patch") => {
     setBusy((b) => ({ ...b, [id]: true }));
     try {
       await api[method](route);
       fetchFeedbacks(page);
-    } catch {
-      // silent
-    } finally {
-      setBusy((b) => ({ ...b, [id]: false }));
-    }
+    } catch { /* silent */ }
+    finally { setBusy((b) => ({ ...b, [id]: false })); }
   };
 
   const markAllRead = async () => {
@@ -72,193 +321,145 @@ const AdminFeedback = () => {
     fetchFeedbacks(page);
   };
 
+  const totalPages = Math.ceil(total / LIMIT);
+
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
-            <MessageSquare size={14} className="text-emerald-400" />
-          </div>
-          <h2 className="text-slate-100 font-semibold text-sm">User Feedback</h2>
-          {stats?.unread > 0 && (
-            <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded-full">
-              {stats.unread} new
-            </span>
-          )}
-        </div>
-        <button onClick={markAllRead}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700
-                     border border-slate-700 text-slate-400 hover:text-white text-xs rounded-lg transition-colors">
-          <CheckCheck size={12} /> Mark all read
-        </button>
-      </div>
-
-      {/* Stats row */}
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 px-5 py-3 border-b border-slate-800">
-          <div className="text-center">
-            <p className="text-white font-bold text-lg">{stats.total}</p>
-            <p className="text-slate-600 text-xs">Total</p>
-          </div>
-          <div className="text-center">
-            <p className="text-emerald-400 font-bold text-lg">{stats.unread}</p>
-            <p className="text-slate-600 text-xs">Unread</p>
-          </div>
-          <div className="text-center">
-            <p className="text-amber-400 font-bold text-lg">
-              {stats.avgRating ? `${stats.avgRating}★` : "—"}
-            </p>
-            <p className="text-slate-600 text-xs">Avg Rating</p>
-          </div>
-          <div className="text-center">
-            <p className="text-rose-400 font-bold text-lg">{stats.byType?.bug || 0}</p>
-            <p className="text-slate-600 text-xs">Bugs</p>
-          </div>
-          <div className="text-center">
-            <p className="text-amber-400 font-bold text-lg">{stats.byType?.suggestion || 0}</p>
-            <p className="text-slate-600 text-xs">Suggestions</p>
-          </div>
-        </div>
+    <>
+      {selected && (
+        <FeedbackToast
+          fb={selected}
+          onClose={() => { setSelected(null); fetchFeedbacks(page); }}
+          onAction={async (id, route, method) => {
+            await action(id, route, method);
+            setSelected(null);
+          }}
+          busy={busy}
+        />
       )}
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-800 flex-wrap">
-        {/* Type filter */}
-        <div className="flex items-center gap-1">
-          {["all", "general", "suggestion", "bug", "praise"].map((t) => (
-            <button key={t} onClick={() => setTypeFilter(t)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors
-                ${typeFilter === t
-                  ? "bg-emerald-500 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-white"}`}>
-              {t}
-            </button>
-          ))}
-        </div>
-        <div className="w-px h-4 bg-slate-700 mx-1" />
-        {/* Read filter */}
-        <div className="flex items-center gap-1">
-          {["all", "unread", "read"].map((r) => (
-            <button key={r} onClick={() => setReadFilter(r)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors
-                ${readFilter === r
-                  ? "bg-slate-600 text-white"
-                  : "bg-slate-800 text-slate-500 hover:text-white"}`}>
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
+      {viewAll && (
+        <ViewAllModal
+          onClose={() => { setViewAll(false); fetchFeedbacks(page); }}
+          onAction={action}
+          busy={busy}
+        />
+      )}
 
-      {/* List */}
-      <div className="divide-y divide-slate-800">
-        {loading ? (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 size={20} className="text-emerald-400 animate-spin" />
-          </div>
-        ) : feedbacks.length === 0 ? (
-          <div className="flex flex-col items-center py-10 gap-2">
-            <MessageSquare size={28} className="text-slate-700" />
-            <p className="text-slate-500 text-sm">No feedback yet</p>
-          </div>
-        ) : feedbacks.map((fb) => {
-          const meta = TYPE_META[fb.type] || TYPE_META.general;
-          const Icon = meta.icon;
-          return (
-            <div key={fb._id}
-              className={`px-5 py-4 transition-colors hover:bg-slate-800/30
-                ${!fb.isRead ? "border-l-2 border-emerald-500" : "border-l-2 border-transparent"}`}>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
 
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {/* Type icon */}
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${meta.bg}`}>
-                    <Icon size={14} className={meta.color} />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-white text-sm font-medium">{fb.name}</span>
-                      <span className="text-slate-600 text-xs capitalize px-1.5 py-0.5
-                                       bg-slate-800 rounded-full">{fb.type}</span>
-                      {!fb.isRead && (
-                        <span className="text-emerald-400 text-xs font-medium">• New</span>
-                      )}
-                      {fb.rating && <StarDisplay value={fb.rating} />}
-                    </div>
-                    <p className="text-slate-300 text-sm leading-relaxed">{fb.message}</p>
-                    <p className="text-slate-600 text-xs mt-1.5">
-                      {new Date(fb.createdAt).toLocaleString("en-BD", {
-                        day: "numeric", month: "short", year: "numeric",
-                        hour: "2-digit", minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {!fb.isRead && (
-                    <button
-                      onClick={() => action(fb._id, `/feedback/admin/${fb._id}/read`)}
-                      disabled={busy[fb._id]}
-                      title="Mark as read"
-                      className="p-1.5 bg-slate-800 hover:bg-emerald-500/10 border border-slate-700
-                                 hover:border-emerald-500/30 text-slate-500 hover:text-emerald-400
-                                 rounded-lg transition-colors">
-                      {busy[fb._id]
-                        ? <Loader2 size={12} className="animate-spin" />
-                        : <MailOpen size={12} />}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => action(fb._id, `/feedback/admin/${fb._id}/archive`)}
-                    disabled={busy[fb._id]}
-                    title="Archive"
-                    className="p-1.5 bg-slate-800 hover:bg-amber-500/10 border border-slate-700
-                               hover:border-amber-500/30 text-slate-500 hover:text-amber-400
-                               rounded-lg transition-colors">
-                    <Archive size={12} />
-                  </button>
-                  <button
-                    onClick={() => action(fb._id, `/feedback/admin/${fb._id}`, "delete")}
-                    disabled={busy[fb._id]}
-                    title="Delete"
-                    className="p-1.5 bg-slate-800 hover:bg-rose-950/50 border border-slate-700
-                               hover:border-rose-500/30 text-slate-500 hover:text-rose-400
-                               rounded-lg transition-colors">
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
+              <MessageSquare size={14} className="text-emerald-400" />
             </div>
-          );
-        })}
-      </div>
+            <h2 className="text-slate-100 font-semibold text-sm">User Feedback</h2>
+            {stats?.unread > 0 && (
+              <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded-full">
+                {stats.unread} new
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={markAllRead}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700
+                         border border-slate-700 text-slate-400 hover:text-white text-xs
+                         rounded-lg transition-colors">
+              <CheckCheck size={12} /> Mark all read
+            </button>
+            <button onClick={() => setViewAll(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10
+                         hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400
+                         hover:text-emerald-300 text-xs font-medium rounded-lg transition-colors">
+              <ExternalLink size={12} /> View All
+            </button>
+          </div>
+        </div>
 
-      {/* Pagination */}
-      {total > 10 && (
+        {/* Stats */}
+        {stats && (
+          <div className="grid grid-cols-5 gap-2 px-5 py-3 border-b border-slate-800">
+            {[
+              { label: "Total",       value: stats.total,                          color: "text-white"       },
+              { label: "Unread",      value: stats.unread,                         color: "text-emerald-400" },
+              { label: "Avg Rating",  value: stats.avgRating ? `${stats.avgRating}★` : "—", color: "text-amber-400" },
+              { label: "Bugs",        value: stats.byType?.bug || 0,               color: "text-rose-400"    },
+              { label: "Suggestions", value: stats.byType?.suggestion || 0,        color: "text-amber-400"   },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="text-center">
+                <p className={`font-bold text-lg ${color}`}>{value}</p>
+                <p className="text-slate-600 text-xs">{label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Cards — click to open toast */}
+        <div className="divide-y divide-slate-800">
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 size={20} className="text-emerald-400 animate-spin" />
+            </div>
+          ) : feedbacks.length === 0 ? (
+            <div className="flex flex-col items-center py-10 gap-2">
+              <MessageSquare size={28} className="text-slate-700" />
+              <p className="text-slate-500 text-sm">No feedback yet</p>
+            </div>
+          ) : feedbacks.map((fb) => {
+            const meta = TYPE_META[fb.type] || TYPE_META.general;
+            const Icon = meta.icon;
+            return (
+              <button key={fb._id}
+                onClick={() => setSelected(fb)}
+                className={`w-full flex items-start gap-3 px-5 py-4 text-left
+                            hover:bg-slate-800/40 transition-colors group cursor-pointer
+                            ${!fb.isRead ? "border-l-2 border-emerald-500" : "border-l-2 border-transparent"}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center
+                                 shrink-0 mt-0.5 ${meta.bg}`}>
+                  <Icon size={13} className={meta.color} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="text-white text-sm font-medium">{fb.name}</span>
+                    {!fb.isRead && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10
+                                       px-1.5 py-0.5 rounded-full">NEW</span>
+                    )}
+                    {fb.rating && <StarDisplay value={fb.rating} />}
+                    <span className="text-slate-600 text-xs capitalize">{meta.label}</span>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed line-clamp-1">{fb.message}</p>
+                  <p className="text-slate-700 text-xs mt-1">{fmt(fb.createdAt)}</p>
+                </div>
+                <Eye size={13} className="text-slate-700 group-hover:text-slate-400
+                                          shrink-0 mt-1 transition-colors" />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Pagination — 5 per page */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800">
-          <button disabled={page === 1}
-            onClick={() => { setPage(page - 1); fetchFeedbacks(page - 1); }}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
-                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
-            Prev
+          <button onClick={() => { const p = page - 1; setPage(p); fetchFeedbacks(p); }}
+            disabled={page === 1}
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 border border-slate-700
+                       text-slate-400 hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            <ChevronLeft size={13} /> Prev
           </button>
           <span className="text-slate-600 text-xs">
-            Page {page} of {Math.ceil(total / 10)} · {total} total
+            {total === 0
+              ? "No feedback"
+              : `${(page - 1) * LIMIT + 1}–${Math.min(page * LIMIT, total)} of ${total}`}
           </span>
-          <button disabled={page * 10 >= total}
-            onClick={() => { setPage(page + 1); fetchFeedbacks(page + 1); }}
-            className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-slate-400
-                       hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
-            Next
+          <button onClick={() => { const p = page + 1; setPage(p); fetchFeedbacks(p); }}
+            disabled={page >= totalPages}
+            className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 border border-slate-700
+                       text-slate-400 hover:text-white text-xs rounded-lg disabled:opacity-30 transition-colors">
+            Next <ChevronRight size={13} />
           </button>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 
