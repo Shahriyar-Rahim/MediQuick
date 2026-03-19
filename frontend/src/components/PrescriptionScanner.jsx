@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { ScanLine, Camera, X, Upload, AlertTriangle, Eye } from "lucide-react";
 import api from "../api/axios";
-import heic2any from "heic2any";
+import imageCompression from "browser-image-compression";
 
 // ── Gemini 3 Flash ──────────────────────────────────────────────────────────
 const GEMINI_PROMPT = `You are a medical prescription analyzer. Look at this prescription image carefully.
@@ -95,52 +95,40 @@ const PrescriptionScanner = () => {
     setError("");
   };
 
-  const handleFile = async (file) => {
-    if (!file) return;
-    setError("");
+const handleFile = async (file) => {
+  if (!file) return;
+  setError("");
+  setScanning(true);
+  setProgressMsg("Optimizing image...");
 
-    let processingFile = file;
+  const options = {
+    maxSizeMB: 1,          // Target size under 1MB
+    maxWidthOrHeight: 1920, // Keep resolution high enough for OCR
+    useWebWorker: true,
+    fileType: "image/jpeg" // Standardize output
+  };
 
-    // Check if the file is HEIC/HEIF
-    const isHeic =
-      file.type === "image/heic" ||
-      file.type === "image/heif" ||
-      file.name.toLowerCase().endsWith(".heic");
-
-    if (isHeic) {
-      try {
-        setProgressMsg("Converting iPhone image...");
-        setScanning(true); // Show a loading state during conversion
-
-        const convertedBlob = await heic2any({
-          blob: file,
-          toType: "image/jpeg",
-          quality: 0.7,
-        });
-
-        // heic2any can return an array if the HEIC has multiple frames
-        processingFile = Array.isArray(convertedBlob)
-          ? convertedBlob[0]
-          : convertedBlob;
-        setScanning(false);
-      } catch (err) {
-        console.error("HEIC conversion failed", err);
-        setError("Could not process this iPhone image. Try a JPG.");
-        setScanning(false);
-        return;
-      }
-    }
-
+  try {
+    // This handles HEIC, PNG, and JPEG automatically
+    const compressedFile = await imageCompression(file, options);
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target.result);
-      setImgData({
-        base64: e.target.result.split(",")[1],
-        mime: "image/jpeg", // We force jpeg because we converted it
+      setImgData({ 
+        base64: e.target.result.split(",")[1], 
+        mime: "image/jpeg" 
       });
+      setScanning(false);
+      setProgressMsg("");
     };
-    reader.readAsDataURL(processingFile);
-  };
+    reader.readAsDataURL(compressedFile);
+  } catch (err) {
+    console.error("Compression error:", err);
+    setError("Failed to process image. Please try a different photo.");
+    setScanning(false);
+  }
+};
 
   const handleScan = async () => {
     if (!imgData.base64) return;
