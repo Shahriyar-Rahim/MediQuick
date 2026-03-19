@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
-  ScanLine, Camera, X, Upload, Key,
+  ScanLine, Camera, X, Upload,
   AlertTriangle, Eye,
 } from "lucide-react";
 import api from "../api/axios";
@@ -74,10 +74,9 @@ const PrescriptionScanner = () => {
   const [progress,     setProgress]     = useState(0);
   const [progressMsg,  setProgressMsg]  = useState("");
   const [error,        setError]        = useState("");
-  const [apiKey,       setApiKey]       = useState(
-    import.meta.env.VITE_GEMINI_API_KEY || ""
-  );
-  const [showKeyInput, setShowKeyInput] = useState(false);
+  
+  // Directly pull from ENV
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 
   const reset = () => {
     setPreview(null);
@@ -101,7 +100,12 @@ const PrescriptionScanner = () => {
 
   const handleScan = async () => {
     if (!imgData.base64) return;
-    if (!apiKey.trim()) { setShowKeyInput(true); return; }
+    
+    // Check if key exists in env
+    if (!apiKey) {
+      setError("AI Configuration missing. Please contact support.");
+      return;
+    }
 
     setScanning(true);
     setError("");
@@ -109,10 +113,9 @@ const PrescriptionScanner = () => {
     const startTime = Date.now();
 
     try {
-      // 1 — Gemini reads prescription
       setProgressMsg("Gemini is reading the prescription...");
       setProgress(15);
-      const geminiResult = await runGemini(imgData.base64, imgData.mime, apiKey.trim());
+      const geminiResult = await runGemini(imgData.base64, imgData.mime, apiKey);
       setProgress(50);
 
       const names = geminiResult.medicines || [];
@@ -122,7 +125,6 @@ const PrescriptionScanner = () => {
         return;
       }
 
-      // 2 — Search each medicine in DB + fetch shop entries
       setProgressMsg(`Found ${names.length} medicines · Searching database...`);
       const stepSize = 38 / names.length;
       const detectedMedicines = [];
@@ -151,11 +153,9 @@ const PrescriptionScanner = () => {
             brandName:   e.brandName || "",
           })),
         });
-
         setProgress((p) => Math.min(90, p + stepSize));
       }
 
-      // 3 — Save to DB
       setProgressMsg("Saving to database...");
       setProgress(93);
 
@@ -171,7 +171,6 @@ const PrescriptionScanner = () => {
       setProgress(100);
       setProgressMsg("Done! Opening results...");
 
-      // 4 — Navigate to results page
       setTimeout(() => {
         setOpen(false);
         reset();
@@ -187,12 +186,11 @@ const PrescriptionScanner = () => {
       }, 500);
 
     } catch (err) {
-      setError(err.message || "Scan failed. Check your API key and try again.");
+      setError(err.message || "Scan failed. Please try again.");
       setScanning(false);
     }
   };
 
-  // ── Floating button ─────────────────────────────────────────────────────────
   if (!open) return (
     <button onClick={() => setOpen(true)} title="Scan Prescription"
       className="fixed bottom-24 right-4 sm:right-6 z-[7000]
@@ -208,7 +206,6 @@ const PrescriptionScanner = () => {
     </button>
   );
 
-  // ── Modal ───────────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-[7000] flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ background: "rgba(2,6,23,0.88)", backdropFilter: "blur(6px)" }}>
@@ -226,7 +223,7 @@ const PrescriptionScanner = () => {
             <div>
               <h2 className="text-white font-bold text-sm">Prescription Scanner</h2>
               <p className="text-slate-600 text-xs">
-                {scanning ? progressMsg : "Powered by Gemini 1.5 Flash · Free"}
+                {scanning ? progressMsg : "Instant AI Analysis"}
               </p>
             </div>
           </div>
@@ -239,9 +236,7 @@ const PrescriptionScanner = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-
-          {/* Scanning progress */}
-          {scanning && (
+          {scanning ? (
             <div className="flex flex-col items-center py-12 gap-6">
               <div className="relative w-20 h-20">
                 <div className="absolute inset-0 rounded-full border-2 border-slate-800" />
@@ -259,40 +254,11 @@ const PrescriptionScanner = () => {
                                   rounded-full transition-all duration-500"
                     style={{ width: `${progress}%` }} />
                 </div>
-                <div className="flex justify-between text-slate-700 text-[10px] mt-1">
-                  <span>Gemini AI</span><span>DB Search</span><span>Save</span>
-                </div>
                 <p className="text-slate-700 text-xs mt-1">{progress}%</p>
               </div>
             </div>
-          )}
-
-          {/* Upload */}
-          {!scanning && (
+          ) : (
             <>
-              {(showKeyInput || !apiKey) && (
-                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Key size={12} className="text-amber-400" />
-                    <p className="text-amber-400 text-xs font-semibold">Gemini API Key</p>
-                  </div>
-                  <p className="text-slate-500 text-xs">
-                    Free at{" "}
-                    <a href="https://aistudio.google.com" target="_blank" rel="noreferrer"
-                      className="text-sky-400 underline">aistudio.google.com</a>
-                    {" "}→ Get API Key · No billing needed.
-                  </p>
-                  <input type="password" placeholder="AIzaSy..."
-                    value={apiKey} onChange={(e) => setApiKey(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg
-                               text-white text-xs placeholder-slate-600
-                               focus:outline-none focus:ring-1 focus:ring-amber-500/50" />
-                  <p className="text-slate-700 text-xs">
-                    Or set <code className="text-slate-500">VITE_GEMINI_API_KEY</code> in .env
-                  </p>
-                </div>
-              )}
-
               {!preview ? (
                 <>
                   <label className="flex flex-col items-center justify-center gap-3 h-52
@@ -337,7 +303,6 @@ const PrescriptionScanner = () => {
                                       from-transparent via-emerald-400 to-transparent opacity-70"
                         style={{ animation: "scanPass 2.5s ease-in-out infinite" }} />
                     </div>
-                    <style>{`@keyframes scanPass{0%{top:0%;opacity:0}8%{opacity:.8}92%{opacity:.8}100%{top:100%;opacity:0}}`}</style>
                   </div>
 
                   {error && (
@@ -350,7 +315,7 @@ const PrescriptionScanner = () => {
                   <div className="flex items-center gap-2 px-3 py-2 bg-slate-900/50 border border-slate-800 rounded-xl">
                     <Eye size={11} className="text-emerald-400 shrink-0" />
                     <p className="text-slate-500 text-xs">
-                      Results open on a new page · Scan saved to database
+                      Scanned medicines will be saved to your history.
                     </p>
                   </div>
                 </div>
@@ -359,10 +324,9 @@ const PrescriptionScanner = () => {
           )}
         </div>
 
-        {/* Footer */}
         {!scanning && preview && (
           <div className="px-5 py-4 border-t border-slate-800 shrink-0">
-            <button onClick={handleScan} disabled={!imgData.base64}
+            <button onClick={handleScan}
               className="w-full flex items-center justify-center gap-2 py-3
                          bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800
                          disabled:text-slate-600 text-white font-semibold text-sm
