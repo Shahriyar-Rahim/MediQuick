@@ -226,7 +226,7 @@ const PrescriptionScanner = () => {
             <div>
               <h2 className="text-white font-bold text-sm">Prescription Scanner</h2>
               <p className="text-slate-600 text-xs">
-                {scanning ? progressMsg : "Scan your prescription"}
+                {scanning ? progressMsg : "Powered by Gemini 1.5 Flash · Free"}
               </p>
             </div>
           </div>
@@ -271,7 +271,26 @@ const PrescriptionScanner = () => {
           {!scanning && (
             <>
               {(showKeyInput || !apiKey) && (
-                
+                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Key size={12} className="text-amber-400" />
+                    <p className="text-amber-400 text-xs font-semibold">Gemini API Key</p>
+                  </div>
+                  <p className="text-slate-500 text-xs">
+                    Free at{" "}
+                    <a href="https://aistudio.google.com" target="_blank" rel="noreferrer"
+                      className="text-sky-400 underline">aistudio.google.com</a>
+                    {" "}→ Get API Key · No billing needed.
+                  </p>
+                  <input type="password" placeholder="AIzaSy..."
+                    value={apiKey} onChange={(e) => setApiKey(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg
+                               text-white text-xs placeholder-slate-600
+                               focus:outline-none focus:ring-1 focus:ring-amber-500/50" />
+                  <p className="text-slate-700 text-xs">
+                    Or set <code className="text-slate-500">VITE_GEMINI_API_KEY</code> in .env
+                  </p>
+                </div>
               )}
 
               {!preview ? (
