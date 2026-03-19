@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import WelcomeBanner from "../components/WelcomeBanner";
+import PrescriptionScanner from "../components/PrescriptionScanner";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -138,6 +139,7 @@ const HomePage = () => {
     <div className="bg-slate-950 min-h-screen">
       {/* Welcome banner */}
       <WelcomeBanner />
+      <PrescriptionScanner />
 
       {/* ── Map ────────────────────────────────────────────────────────── */}
       <div className="relative h-[380px] border-b border-slate-800">

@@ -15,6 +15,7 @@ import MedicinePage from "./pages/MedicinePage";
 import ShopPage from "./pages/ShopPage";
 import ShopsPage from "./pages/ShopsPage";
 import AddPage from "./pages/AddPage";
+import PrescriptionResultPage from "./pages/PrescriptionResultPage";
 
 // Pages — admin
 import LoginPage from "./pages/admin/LoginPage";
@@ -102,6 +103,10 @@ const App = () => {
                 <AddPage />
               </Layout>
             }
+          />
+          <Route 
+            path="/prescription/:id"
+            element={<PrescriptionResultPage />}
           />
 
           {/* ── Admin auth ── */}
