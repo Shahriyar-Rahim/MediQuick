@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NavBar from "./components/NavBar";
 import Footer from "./components/Footer";
+import InstallPrompt from "./components/InstallPrompt";
 
 // Pages — public
 import HomePage from "./pages/HomePage";
@@ -26,6 +27,7 @@ const Layout = ({ children }) => (
     <NavBar />
     <main className="flex-1">{children}</main>
     <Footer />
+    <InstallPrompt />
   </div>
 );
 
