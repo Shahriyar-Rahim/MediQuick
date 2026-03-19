@@ -25,7 +25,7 @@ Rules:
 
 const runGemini = async (base64, mime, apiKey) => {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/Gemini-3-Flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/Gemini-3.0-Flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
