@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import api from "../api/axios";
 
-// ── Gemini 1.5 Flash ──────────────────────────────────────────────────────────
+// ── Gemini 3 Flash ──────────────────────────────────────────────────────────
 const GEMINI_PROMPT = `You are a medical prescription analyzer. Look at this prescription image carefully.
 
 Extract ONLY the medicine/drug names. Return this exact JSON:
@@ -42,7 +42,7 @@ const runGemini = async (base64, mime, apiKey) => {
   if (data.error) throw new Error(data.error.message);
   const text  = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Invalid Gemini response");
+  if (!match) throw new Error("Something went wrong");
   return JSON.parse(match[0]);
 };
 
@@ -103,7 +103,7 @@ const PrescriptionScanner = () => {
     
     // Check if key exists in env
     if (!apiKey) {
-      setError("AI Configuration missing. Please contact support.");
+      setError("Something went wrong. Please contact support.");
       return;
     }
 
@@ -113,7 +113,7 @@ const PrescriptionScanner = () => {
     const startTime = Date.now();
 
     try {
-      setProgressMsg("Gemini is reading the prescription...");
+      setProgressMsg("MediQuick is reading the prescription...");
       setProgress(15);
       const geminiResult = await runGemini(imgData.base64, imgData.mime, apiKey);
       setProgress(50);
