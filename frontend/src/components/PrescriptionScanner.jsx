@@ -2,50 +2,89 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { ScanLine, Camera, X, Upload, AlertTriangle, Eye } from "lucide-react";
 import api from "../api/axios";
+import heic2any from "heic2any";
 import imageCompression from "browser-image-compression";
 
 // ── Gemini 3 Flash ──────────────────────────────────────────────────────────
-const GEMINI_PROMPT = `You are a medical prescription analyzer. Look at this prescription image carefully.
+const GEMINI_PROMPT = `You are an expert medical OCR and prescription analyzer. 
+Analyze the provided image and extract a list of medicinal products.
 
-Extract ONLY the medicine/drug names. Return this exact JSON:
+### Task:
+Identify all pharmaceutical items, including brand names (e.g., Napa, Seclo) and generic names (e.g., Paracetamol, Omeprazole).
+
+### Extraction Rules:
+1. **Strict Exclusion**: Do NOT extract patient names, doctor names, hospital headers, dates, dosages (e.g., 500mg), or frequencies (e.g., 1+0+1).
+2. **Handle Handwriting**: If the text is cursive or stylized, use medical context to infer the most likely drug name.
+3. **Format**: Return ONLY a valid JSON object. No conversational filler or markdown code blocks (unless specified in config).
+
+### Output Schema:
 {
-  "medicines": ["Medicine1", "Medicine2"],
-  "confidence": "high|medium|low",
-  "notes": "any notes about image quality or prescription"
+  "medicines": ["Name1", "Name2"],
+  "confidence": "high" | "medium" | "low",
+  "notes": "Briefly describe legibility or issues (e.g., 'Cursive was difficult to read')."
 }
 
-Rules:
-- Only medicine/drug names (generic OR brand names)
-- Exclude: doctor name, patient name, dosage, dates, clinic, hospital names
-- Include both generic (Paracetamol) and brand names (Napa, Ace, Seclo)
-- Unclear image → { "medicines": [], "confidence": "low", "notes": "reason" }
-- Return ONLY valid JSON, no extra text`;
+### Edge Cases:
+- If no medicines are found: {"medicines": [], "confidence": "low", "notes": "No medicines detected."}
+- If the image is not a prescription: {"medicines": [], "confidence": "low", "notes": "Image does not appear to be a medical prescription."}`;
 
 const runGemini = async (base64, mime, apiKey) => {
+  const MODEL_ID = "gemini-2.5-flash";
+
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`,
+
     {
       method: "POST",
+
       headers: { "Content-Type": "application/json" },
+
       body: JSON.stringify({
         contents: [
           {
             parts: [
               { text: GEMINI_PROMPT },
+
               { inline_data: { mime_type: mime, data: base64 } },
             ],
           },
         ],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+          response_mime_type: "application/json",
+        },
       }),
     },
   );
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
+
+  if (data.error) {
+    throw new Error(data.error.message);
+  }
+
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Something went wrong");
-  return JSON.parse(match[0]);
+
+  if (!text) {
+    throw new Error(
+      "The AI returned an empty response. Please try a clearer photo.",
+    );
+  }
+
+  try {
+    // We try to parse the text directly first
+
+    return JSON.parse(text);
+  } catch (e) {
+    // Fallback: If for some reason there is markdown wrapper ```json ... ```
+
+    const match = text.match(/\{[\s\S]*\}/);
+
+    if (!match) throw new Error("Could not interpret the prescription data.");
+
+    return JSON.parse(match[0]);
+  }
 };
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
@@ -95,40 +134,58 @@ const PrescriptionScanner = () => {
     setError("");
   };
 
-const handleFile = async (file) => {
-  if (!file) return;
-  setError("");
-  setScanning(true);
-  setProgressMsg("Optimizing image...");
+  const handleFile = async (file) => {
+    if (!file) return;
+    setError("");
+    setScanning(true);
+    setProgress(5);
+    setProgressMsg("Processing image...");
 
-  const options = {
-    maxSizeMB: 1,          // Target size under 1MB
-    maxWidthOrHeight: 1920, // Keep resolution high enough for OCR
-    useWebWorker: true,
-    fileType: "image/jpeg" // Standardize output
-  };
+    try {
+      let blobToCompress = file;
 
-  try {
-    // This handles HEIC, PNG, and JPEG automatically
-    const compressedFile = await imageCompression(file, options);
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target.result);
-      setImgData({ 
-        base64: e.target.result.split(",")[1], 
-        mime: "image/jpeg" 
-      });
+      // Step 1: Handle HEIC Conversion
+      const isHeic =
+        file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic");
+      if (isHeic) {
+        setProgressMsg("Converting iPhone photo...");
+        const converted = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+          quality: 0.8,
+        });
+        blobToCompress = Array.isArray(converted) ? converted[0] : converted;
+      }
+
+      // Step 2: Handle Compression (Fixes 413 Error)
+      setProgressMsg("Optimizing size...");
+      const options = {
+        maxSizeMB: 1, // Force under 1MB to avoid 413
+        maxWidthOrHeight: 1600, // Good balance for AI legibility
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(blobToCompress, options);
+
+      // Step 3: Finalize for Preview and API
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreview(e.target.result);
+        setImgData({
+          base64: e.target.result.split(",")[1],
+          mime: "image/jpeg",
+        });
+        setScanning(false);
+        setProgress(0);
+        setProgressMsg("");
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (err) {
+      console.error("Processing failed:", err);
+      setError("Could not process this image. Try taking a new photo.");
       setScanning(false);
-      setProgressMsg("");
-    };
-    reader.readAsDataURL(compressedFile);
-  } catch (err) {
-    console.error("Compression error:", err);
-    setError("Failed to process image. Please try a different photo.");
-    setScanning(false);
-  }
-};
+    }
+  };
 
   const handleScan = async () => {
     if (!imgData.base64) return;
