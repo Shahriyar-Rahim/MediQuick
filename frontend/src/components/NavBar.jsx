@@ -5,7 +5,7 @@ import api from "../api/axios";
 import {
   Plus, LayoutDashboard, LogOut, Shield, Star,
   Menu, X, Activity, Search, Pill, Store,
-  Loader2, ChevronRight,
+  Loader2, ChevronRight, MessageSquare,
 } from "lucide-react";
 
 // ── Global search dropdown ────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ const NavSearch = () => {
 };
 
 // ── Navbar ────────────────────────────────────────────────────────────────────
-const NavBar = () => {
+const Navbar = () => {
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen,   setMobileOpen]   = useState(false);
@@ -277,7 +277,7 @@ const NavBar = () => {
               <Activity size={16} className="text-white" strokeWidth={2.5} />
             </div>
             <span className="text-white font-bold text-lg tracking-tight">
-              Medi<span className="text-emerald-400">Quick</span>
+              Medi<span className="text-emerald-400">-Quick</span>
             </span>
           </Link>
 
@@ -288,6 +288,25 @@ const NavBar = () => {
 
           {/* Desktop actions */}
           <div className="hidden sm:flex items-center gap-2 shrink-0">
+            {/* Feedback icon */}
+            <button
+              onClick={() => {
+                // Navigate home then scroll to feedback section
+                if (window.location.pathname !== "/") {
+                  window.location.href = "/#feedback";
+                } else {
+                  document.getElementById("feedback-section")?.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              title="Give Feedback"
+              className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800
+                         rounded-lg transition-colors relative group"
+            >
+              <MessageSquare size={18} />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400
+                               rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+
             <Link to="/add"
               className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400
                          text-white text-sm font-semibold rounded-lg transition-colors shadow">
@@ -394,4 +413,4 @@ const NavBar = () => {
   );
 };
 
-export default NavBar;
+export default Navbar;

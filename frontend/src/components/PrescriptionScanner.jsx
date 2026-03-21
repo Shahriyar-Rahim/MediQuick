@@ -1,90 +1,121 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
-import { ScanLine, Camera, X, Upload, AlertTriangle, Eye } from "lucide-react";
+import {
+  ScanLine,
+  Camera,
+  X,
+  Upload,
+  Key,
+  AlertTriangle,
+  Eye,
+  Sparkles,
+} from "lucide-react";
 import api from "../api/axios";
 import heic2any from "heic2any";
 import imageCompression from "browser-image-compression";
 
-// ── Gemini 3 Flash ──────────────────────────────────────────────────────────
-const GEMINI_PROMPT = `You are an expert medical OCR and prescription analyzer. 
-Analyze the provided image and extract a list of medicinal products.
+// ── Gemini 3 Flash  — prescription OCR
 
-### Task:
-Identify all pharmaceutical items, including brand names (e.g., Napa, Seclo) and generic names (e.g., Paracetamol, Omeprazole).
+const OCR_PROMPT = `You are a medical prescription analyzer. Carefully examine this prescription image.
 
-### Extraction Rules:
-1. **Strict Exclusion**: Do NOT extract patient names, doctor names, hospital headers, dates, dosages (e.g., 500mg), or frequencies (e.g., 1+0+1).
-2. **Handle Handwriting**: If the text is cursive or stylized, use medical context to infer the most likely drug name.
-3. **Format**: Return ONLY a valid JSON object. No conversational filler or markdown code blocks (unless specified in config).
-
-### Output Schema:
+Extract ONLY the medicine/drug names. Return this exact JSON:
 {
-  "medicines": ["Name1", "Name2"],
-  "confidence": "high" | "medium" | "low",
-  "notes": "Briefly describe legibility or issues (e.g., 'Cursive was difficult to read')."
+  "medicines": ["Medicine1", "Medicine2"],
+  "confidence": "high|medium|low",
+  "notes": "brief note about image quality or prescription type"
 }
 
-### Edge Cases:
-- If no medicines are found: {"medicines": [], "confidence": "low", "notes": "No medicines detected."}
-- If the image is not a prescription: {"medicines": [], "confidence": "low", "notes": "Image does not appear to be a medical prescription."}`;
+Rules:
+- Only medicine/drug names (generic OR brand)
+- Exclude: doctor name, patient name, dosage, date, clinic/hospital name
+- Include both generic (Paracetamol) and brand (Napa, Ace, Seclo)
+- Return ONLY valid JSON`;
 
-const runGemini = async (base64, mime, apiKey) => {
-  const MODEL_ID = "gemini-2.5-flash";
-
+const runGeminiOCR = async (base64, mime, apiKey) => {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`,
-
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
-
       headers: { "Content-Type": "application/json" },
-
       body: JSON.stringify({
         contents: [
           {
             parts: [
-              { text: GEMINI_PROMPT },
-
+              { text: OCR_PROMPT },
               { inline_data: { mime_type: mime, data: base64 } },
             ],
           },
         ],
-
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 512,
           response_mime_type: "application/json",
         },
       }),
     },
   );
   const data = await res.json();
-
-  if (data.error) {
-    throw new Error(data.error.message);
-  }
-
+  if (data.error) throw new Error(data.error.message);
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-  if (!text) {
-    throw new Error(
-      "The AI returned an empty response. Please try a clearer photo.",
-    );
-  }
-
   try {
-    // We try to parse the text directly first
-
-    return JSON.parse(text);
-  } catch (e) {
-    // Fallback: If for some reason there is markdown wrapper ```json ... ```
-
     const match = text.match(/\{[\s\S]*\}/);
-
-    if (!match) throw new Error("Could not interpret the prescription data.");
-
+    if (!match) {
+      console.error("Raw OCR Response:", text);
+      throw new Error("OCR could not find medicine names in this image.");
+    }
     return JSON.parse(match[0]);
+  } catch (parseErr) {
+    throw new Error("Failed to parse medicine data. Please try a clearer photo.");
   }
+};
+
+// ── gemini-2.5-flash — medicine web enrichment (Google Search grounding) ──────
+const ENRICH_PROMPT = (name, country) => `
+Search the web for complete medical information about: "${name}"
+
+Return ONLY this exact JSON:
+{
+  "found": true,
+  "genericName": "scientific/generic name",
+  "brandNames": ["brand1", "brand2"],
+  "category": "antibiotic|antifungal|antiviral|analgesic|antacid|antidiabetic|antihypertensive|antihistamine|vitamin|supplement|other",
+  "description": "2-3 sentence description",
+  "uses": "what conditions it treats",
+  "sideEffects": "common side effects",
+  "price": {
+    "amount": 10,
+    "currency": "BDT",
+    "unit": "per tablet",
+    "note": "approximate price in ${country}"
+  }
+}
+
+If not found: { "found": false, "reason": "why" }
+Return ONLY valid JSON.`;
+
+const runGeminiEnrich = async (
+  medicineName,
+  apiKey,
+  country = "Bangladesh",
+) => {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: ENRICH_PROMPT(medicineName, country) }] }],
+        tools: [{ google_search: {} }], // Google Search grounding
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+      }),
+    },
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return { found: false, reason: "No data found" };
+  return JSON.parse(match[0]);
 };
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
@@ -108,7 +139,32 @@ const getMedicineEntries = async (id) => {
   }
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// Auto-create medicine via backend enrichment
+const autoCreateMedicine = async (name, apiKey, country) => {
+  try {
+    const { data } = await api.post("/medicines/enrich", {
+      medicineName: name,
+      apiKey,
+      country,
+    });
+    return data.data || null;
+  } catch {
+    return null;
+  }
+};
+
+// ── Get user country ──────────────────────────────────────────────────────────
+const getUserCountry = async () => {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    return data.country_name || "Bangladesh";
+  } catch {
+    return "Bangladesh";
+  }
+};
+
+// ── Main component ────────────────────────────────────────────────────────────
 const PrescriptionScanner = () => {
   const navigate = useNavigate();
   const fileRef = useRef(null);
@@ -120,10 +176,12 @@ const PrescriptionScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
+  const [progressSub, setProgressSub] = useState("");
   const [error, setError] = useState("");
-
-  // Directly pull from ENV
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  const [apiKey, setApiKey] = useState(
+    import.meta.env.VITE_GEMINI_API_KEY || "",
+  );
+  const [showKeyInput, setShowKeyInput] = useState(false);
 
   const reset = () => {
     setPreview(null);
@@ -131,6 +189,7 @@ const PrescriptionScanner = () => {
     setScanning(false);
     setProgress(0);
     setProgressMsg("");
+    setProgressSub("");
     setError("");
   };
 
@@ -189,53 +248,101 @@ const PrescriptionScanner = () => {
 
   const handleScan = async () => {
     if (!imgData.base64) return;
-
-    // Check if key exists in env
-    if (!apiKey) {
-      setError("Something went wrong. Please contact support.");
+    if (!apiKey.trim()) {
+      setShowKeyInput(true);
       return;
     }
 
     setScanning(true);
     setError("");
-    setProgress(10);
     const startTime = Date.now();
 
     try {
-      setProgressMsg("MediQuick is reading the prescription...");
-      setProgress(15);
-      const geminiResult = await runGemini(
+      // ── Step 1: OCR ────────────────────────────────────────────────────────
+      setProgress(8);
+      setProgressMsg("Reading prescription...");
+      setProgressSub("OCRanalyzing image");
+
+      const ocrResult = await runGeminiOCR(
         imgData.base64,
         imgData.mime,
-        apiKey,
+        apiKey.trim(),
       );
-      setProgress(50);
+      const names = ocrResult.medicines || [];
 
-      const names = geminiResult.medicines || [];
       if (names.length === 0) {
         setError(
-          geminiResult.notes || "No medicines detected. Try a clearer image.",
+          ocrResult.notes || "No medicines detected. Try a clearer image.",
         );
         setScanning(false);
         return;
       }
 
-      setProgressMsg(`Found ${names.length} medicines · Searching database...`);
-      const stepSize = 38 / names.length;
+      setProgress(25);
+      setProgressMsg(
+        `Detected ${names.length} medicine${names.length > 1 ? "s" : ""}`,
+      );
+      setProgressSub("Searching Medi-Quick database...");
+
+      // ── Step 2: Get user country for price localization ────────────────────
+      const country = await getUserCountry();
+
+      // ── Step 3: Process each medicine ─────────────────────────────────────
+      const stepSize = 65 / names.length;
       const detectedMedicines = [];
+      let autoCreatedCount = 0;
 
       for (const name of names) {
-        setProgressMsg(`Searching: ${name}...`);
+        setProgressMsg(`Processing: ${name}`);
+
+        // Search in Medi-Quick DB
         const matches = await searchMedicine(name);
-        const medicine = matches[0] || null;
+        let medicine = matches[0] || null;
+        let enriched = null;
+        let wasCreated = false;
+
+        if (!medicine) {
+          // Not in DB — enrich from web + auto-create
+          setProgressSub(
+            `"${name}" not found · Searching web (${country} prices)...`,
+          );
+
+          enriched = await runGeminiEnrich(name, apiKey.trim(), country);
+
+          if (enriched?.found) {
+            setProgressSub(
+              `Found! Creating "${enriched.genericName}" in database...`,
+            );
+
+            // Try to create via backend
+            medicine = await autoCreateMedicine(name, apiKey.trim(), country);
+
+            if (medicine) {
+              wasCreated = true;
+              autoCreatedCount++;
+              // Re-fetch if there's a matching DB entry now
+              const freshMatches = await searchMedicine(
+                enriched.genericName || name,
+              );
+              if (freshMatches[0]) medicine = freshMatches[0];
+            }
+          }
+        } else {
+          setProgressSub(`Found in database ✓`);
+        }
+
+        // Fetch shop entries
         const entries = medicine ? await getMedicineEntries(medicine._id) : [];
 
         detectedMedicines.push({
           detectedName: name,
           medicineId: medicine?._id || null,
-          medicineGenericName: medicine?.genericName || "",
+          medicineGenericName:
+            medicine?.genericName || enriched?.genericName || name,
           medicine,
           entries,
+          enrichedInfo: enriched, // web-fetched info for display
+          wasAutoCreated: wasCreated,
           shopEntries: entries.map((e) => ({
             shop: e.shop?._id,
             shopName: e.shop?.name || "",
@@ -251,23 +358,31 @@ const PrescriptionScanner = () => {
             brandName: e.brandName || "",
           })),
         });
+
         setProgress((p) => Math.min(90, p + stepSize));
       }
 
-      setProgressMsg("Saving to database...");
+      // ── Step 4: Save prescription to DB ───────────────────────────────────
       setProgress(93);
+      setProgressMsg("Saving scan...");
+      setProgressSub(
+        `${autoCreatedCount > 0 ? `${autoCreatedCount} new medicine${autoCreatedCount > 1 ? "s" : ""} added · ` : ""}Saving to database`,
+      );
 
       const { data: saved } = await api.post("/prescriptions", {
         imageBase64: imgData.base64,
-        geminiRaw: JSON.stringify(geminiResult),
-        confidence: geminiResult.confidence,
-        geminiNotes: geminiResult.notes || "",
+        geminiRaw: JSON.stringify(ocrResult),
+        confidence: ocrResult.confidence,
+        geminiNotes: ocrResult.notes || "",
         detectedMedicines,
         scanDurationMs: Date.now() - startTime,
       });
 
       setProgress(100);
-      setProgressMsg("Done! Opening results...");
+      setProgressMsg("Done!");
+      setProgressSub(
+        `${detectedMedicines.filter((m) => m.medicine).length} medicines found · Opening results`,
+      );
 
       setTimeout(() => {
         setOpen(false);
@@ -276,18 +391,21 @@ const PrescriptionScanner = () => {
           state: {
             prescriptionId: saved.data._id,
             detectedMedicines,
-            confidence: geminiResult.confidence,
-            geminiNotes: geminiResult.notes || "",
+            confidence: ocrResult.confidence,
+            geminiNotes: ocrResult.notes || "",
             imagePreview: preview,
+            country,
+            autoCreatedCount,
           },
         });
-      }, 500);
+      }, 600);
     } catch (err) {
-      setError(err.message || "Scan failed. Please try again.");
+      setError(err.message || "Scan failed. try again.");
       setScanning(false);
     }
   };
 
+  // ── Floating button ─────────────────────────────────────────────────────────
   if (!open)
     return (
       <button
@@ -309,10 +427,11 @@ const PrescriptionScanner = () => {
       </button>
     );
 
+  // ── Modal ───────────────────────────────────────────────────────────────────
   return (
     <div
       className="fixed inset-0 z-[7000] flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ background: "rgba(2,6,23,0.88)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(2,6,23,0.90)", backdropFilter: "blur(6px)" }}
     >
       <div
         className="w-full sm:max-w-md bg-slate-950 border border-slate-800
@@ -332,7 +451,7 @@ const PrescriptionScanner = () => {
                 Prescription Scanner
               </h2>
               <p className="text-slate-600 text-xs">
-                {scanning ? progressMsg : "Instant AI Analysis"}
+                {scanning ? progressMsg : "Scan a prescription"}
               </p>
             </div>
           </div>
@@ -353,23 +472,30 @@ const PrescriptionScanner = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {scanning ? (
-            <div className="flex flex-col items-center py-12 gap-6">
+          {/* Scanning progress */}
+          {scanning && (
+            <div className="flex flex-col items-center py-10 gap-6">
               <div className="relative w-20 h-20">
                 <div className="absolute inset-0 rounded-full border-2 border-slate-800" />
                 <div
                   className="absolute inset-0 rounded-full border-2
-                                border-t-emerald-400 border-r-emerald-400/40
+                                border-t-emerald-400 border-r-emerald-400/30
                                 border-b-transparent border-l-transparent animate-spin"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <ScanLine size={26} className="text-emerald-400" />
+                  <Sparkles size={22} className="text-emerald-400" />
                 </div>
               </div>
-              <div className="text-center space-y-1 w-full max-w-xs">
+
+              <div className="text-center space-y-1.5 w-full max-w-xs">
                 <p className="text-white font-semibold text-sm">
                   {progressMsg}
                 </p>
+                {progressSub && (
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    {progressSub}
+                  </p>
+                )}
                 <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400
@@ -377,37 +503,108 @@ const PrescriptionScanner = () => {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <p className="text-slate-700 text-xs mt-1">{progress}%</p>
+                <div className="flex justify-between text-slate-700 text-[10px] mt-1 px-0.5">
+                  <span>OCR</span>
+                  <span>Web Search</span>
+                  <span>DB</span>
+                  <span>Save</span>
+                </div>
+                <p className="text-slate-700 text-xs">{progress}%</p>
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Upload UI */}
+          {!scanning && (
             <>
+              {/* {(showKeyInput || !apiKey) && (
+                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Key size={12} className="text-amber-400" />
+                    <p className="text-amber-400 text-xs font-semibold">Gemini API Key</p>
+                  </div>
+                  <p className="text-slate-500 text-xs">
+                    Free at{" "}
+                    <a href="https://aistudio.google.com" target="_blank" rel="noreferrer"
+                      className="text-sky-400 underline">aistudio.google.com</a>
+                    {" "}→ Get API Key · No billing.
+                  </p>
+                  <input type="password" placeholder="AIzaSy..."
+                    value={apiKey} onChange={(e) => setApiKey(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg
+                               text-white text-xs placeholder-slate-600
+                               focus:outline-none focus:ring-1 focus:ring-amber-500/50" />
+                  <p className="text-slate-700 text-xs">
+                    Or set <code className="text-slate-500">VITE_GEMINI_API_KEY</code> in .env
+                  </p>
+                </div>
+              )} */}
+
+              {/* Smart features callout */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: "🔍", label: "OCR Scan", sub: "Reads prescriptions" },
+                  {
+                    icon: "🌐",
+                    label: "Web Search",
+                    sub: "Auto-finds medicine info",
+                  },
+                  {
+                    icon: "💊",
+                    label: "Auto-Create",
+                    sub: "Adds missing medicines",
+                  },
+                ].map(({ icon, label, sub }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col items-center gap-1 p-2.5
+                                              bg-slate-900/50 border border-slate-800 rounded-xl text-center"
+                  >
+                    <span className="text-lg">{icon}</span>
+                    <p className="text-slate-200 text-xs font-medium">
+                      {label}
+                    </p>
+                    <p className="text-slate-600 text-[10px]">{sub}</p>
+                  </div>
+                ))}
+              </div>
+
               {!preview ? (
                 <>
                   <label
-                    className="flex flex-col items-center justify-center gap-3 h-52
+                    className="flex flex-col items-center justify-center gap-3 h-48
                                      rounded-2xl border-2 border-dashed border-slate-700
                                      hover:border-emerald-500/40 cursor-pointer transition-colors
                                      bg-slate-900/40 group"
                   >
                     <div
-                      className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20
+                      className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20
                                     flex items-center justify-center group-hover:bg-emerald-500/15 transition-colors"
                     >
-                      <Upload size={22} className="text-emerald-400" />
+                      <Upload size={20} className="text-emerald-400" />
                     </div>
                     <div className="text-center">
                       <p className="text-slate-200 text-sm font-medium">
                         Upload prescription
                       </p>
-                      <p className="text-slate-600 text-xs mt-1">
+                      <p className="text-slate-600 text-xs mt-0.5">
                         JPG · PNG · WEBP
                       </p>
                     </div>
+                    // For the Upload label input
                     <input
                       ref={fileRef}
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif" // Added HEIC/HEIF
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                      className="hidden"
+                      onChange={(e) => handleFile(e.target.files[0])}
+                    />
+                    // For the Camera input
+                    <input
+                      ref={cameraRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
                       className="hidden"
                       onChange={(e) => handleFile(e.target.files[0])}
                     />
@@ -436,7 +633,7 @@ const PrescriptionScanner = () => {
                     <img
                       src={preview}
                       alt="prescription"
-                      className="w-full max-h-64 object-contain bg-slate-900"
+                      className="w-full max-h-60 object-contain bg-slate-900"
                     />
                     <button
                       onClick={reset}
@@ -454,6 +651,7 @@ const PrescriptionScanner = () => {
                         }}
                       />
                     </div>
+                    <style>{`@keyframes scanPass{0%{top:0%;opacity:0}8%{opacity:.8}92%{opacity:.8}100%{top:100%;opacity:0}}`}</style>
                   </div>
 
                   {error && (
@@ -471,7 +669,8 @@ const PrescriptionScanner = () => {
                   <div className="flex items-center gap-2 px-3 py-2 bg-slate-900/50 border border-slate-800 rounded-xl">
                     <Eye size={11} className="text-emerald-400 shrink-0" />
                     <p className="text-slate-500 text-xs">
-                      Scanned medicines will be saved to your history.
+                      Medicines not in Medi-Quick will be auto-searched on the
+                      web and added
                     </p>
                   </div>
                 </div>
@@ -480,17 +679,19 @@ const PrescriptionScanner = () => {
           )}
         </div>
 
+        {/* Footer */}
         {!scanning && preview && (
           <div className="px-5 py-4 border-t border-slate-800 shrink-0">
             <button
               onClick={handleScan}
+              disabled={!imgData.base64}
               className="w-full flex items-center justify-center gap-2 py-3
                          bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800
                          disabled:text-slate-600 text-white font-semibold text-sm
                          rounded-xl transition-colors shadow-lg shadow-emerald-500/20"
             >
-              <ScanLine size={16} />
-              Scan &amp; Find Medicines
+              <Sparkles size={16} />
+              Smart Scan
             </button>
           </div>
         )}

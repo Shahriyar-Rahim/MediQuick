@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { toast } from "react-toastify";
 import api from "../api/axios";
+import MapSearchBox from "../components/MapSearchBox";
 import {
   Pill, Store, Link2, MapPin, Upload, Loader2,
   CheckCircle, Info, Plus, X, Locate,
@@ -28,19 +28,20 @@ const pinIcon = new L.DivIcon({
   iconAnchor: [13, 26],
 });
 
-const FlyToLocation = ({ coords }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (coords) map.flyTo([coords.lat, coords.lng], 16, { animate: true, duration: 1 });
-  }, [coords]);
-  return null;
-};
-
 // Component that places a pin on map click
 const MapClickHandler = ({ onPick }) => {
   useMapEvents({
     click(e) { onPick(e.latlng.lat, e.latlng.lng); },
   });
+  return null;
+};
+
+// Fly map to searched location
+const FlyToCoords = ({ coords }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords) map.flyTo([coords.lat, coords.lng], 16, { animate: true, duration: 0.8 });
+  }, [coords]);
   return null;
 };
 
@@ -54,131 +55,6 @@ const TABS = [
   { id: "shop",     icon: Store,  label: "Add Shop"     },
   { id: "entry",    icon: Link2,  label: "Add to Shop"  },
 ];
-
-const UpdateMedicineImageForm = ({ medicineId }) => {
-  const navigate = useNavigate();
-  const [medicine,  setMedicine]  = useState(null);
-  const [image,     setImage]     = useState(null);
-  const [preview,   setPreview]   = useState(null);
-  const [submitting, setSub]      = useState(false);
-  const [done,      setDone]      = useState(false);
-
-  // Load existing medicine details
-  useEffect(() => {
-    if (!medicineId) return;
-    api.get(`/medicines/${medicineId}`)
-      .then(({ data }) => {
-        setMedicine(data.data);
-        // Show existing image as preview
-        if (data.data?.image?.url) setPreview(data.data.image.url);
-      })
-      .catch(() => toast.error("Failed to load medicine"));
-  }, [medicineId]);
-
-  const handleImg = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setImage(f);
-    setPreview(URL.createObjectURL(f));
-  };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!image) { toast.error("Please select an image"); return; }
-    setSub(true);
-    try {
-      const fd = new FormData();
-      fd.append("image", image);
-      await api.post(`/upload/medicine/${medicineId}`, fd, {
-        headers: { "Content-Type": undefined },
-      });
-      toast.success("Image updated!");
-      setDone(true);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Upload failed");
-    } finally {
-      setSub(false);
-    }
-  };
-
-  if (!medicine) return (
-    <div className="flex items-center justify-center py-12">
-      <Loader2 size={20} className="text-emerald-400 animate-spin" />
-    </div>
-  );
-
-  if (done) return (
-    <div className="flex flex-col items-center py-12 gap-4">
-      <CheckCircle size={40} className="text-emerald-400" />
-      <p className="text-white font-semibold">Image updated!</p>
-      <button onClick={() => navigate(`/medicines/${medicineId}`)}
-        className="text-emerald-400 hover:text-emerald-300 text-sm underline">
-        Back to medicine
-      </button>
-    </div>
-  );
-
-  return (
-    <form onSubmit={submit} className="space-y-5">
-      {/* Current medicine info */}
-      <div className="flex items-center gap-3 p-3 bg-slate-800/60 rounded-xl border border-slate-700">
-        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20
-                        flex items-center justify-center shrink-0 overflow-hidden">
-          {preview
-            ? <img src={preview} alt="" className="w-full h-full object-cover rounded-lg" />
-            : <Pill size={16} className="text-emerald-400" />}
-        </div>
-        <div>
-          <p className="text-white text-sm font-semibold capitalize">{medicine.genericName}</p>
-          <p className="text-slate-500 text-xs capitalize">{medicine.category}</p>
-        </div>
-      </div>
-
-      <Field label="New Photo" hint="JPEG, PNG or WEBP · max 5MB">
-        <label className="flex flex-col items-center justify-center gap-2 w-full h-48 rounded-xl
-                           border-2 border-dashed border-slate-700 hover:border-emerald-500/50
-                           cursor-pointer transition-colors overflow-hidden bg-slate-900">
-          {preview ? (
-            <div className="relative w-full h-full">
-              <img src={preview} alt="preview"
-                className="w-full h-full object-contain" />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center
-                              opacity-0 hover:opacity-100 transition-opacity">
-                <p className="text-white text-xs font-medium">Click to change</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <Upload size={24} className="text-slate-600" />
-              <span className="text-slate-500 text-sm">Click to upload photo</span>
-              <span className="text-slate-700 text-xs">or drag and drop</span>
-            </>
-          )}
-          <input type="file" accept="image/jpeg,image/png,image/webp"
-            className="hidden" onChange={handleImg} />
-        </label>
-      </Field>
-
-      <div className="flex gap-3">
-        <button type="button"
-          onClick={() => navigate(`/medicines/${medicineId}`)}
-          className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700
-                     text-slate-400 hover:text-white text-sm rounded-xl transition-colors">
-          Cancel
-        </button>
-        <button type="submit" disabled={submitting || !image}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5
-                     bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-800
-                     disabled:text-emerald-600 text-white text-sm font-semibold
-                     rounded-xl transition-colors">
-          {submitting
-            ? <><Loader2 size={15} className="animate-spin" /> Uploading...</>
-            : <><Upload size={15} /> Upload Photo</>}
-        </button>
-      </div>
-    </form>
-  );
-};
 
 // ── Reusable field ────────────────────────────────────────────────────────────
 const Field = ({ label, hint, children }) => (
@@ -347,25 +223,11 @@ const AddMedicineForm = ({ prefillId }) => {
 const AddShopForm = () => {
   const [form, setForm]       = useState({ name: "", address: "", contact: "" });
   const [coords, setCoords]   = useState(null); // { lat, lng }
+  const [searchCoords, setSearchCoords] = useState(null); // from map search
   const [image, setImage]     = useState(null);
   const [preview, setPreview] = useState(null);
   const [submitting, setSub]  = useState(false);
   const [done, setDone]       = useState(null);
-  const [locating, setLocating] = useState(false);
-
-  const handleLocate = () => {
-    setLocating(true);
-    navigator.geolocation?.getCurrentPosition(
-      ({ coords: c }) => {
-        setCoords({ lat: c.latitude, lng: c.longitude });
-        setLocating(false);
-      },
-      () => {
-        toast.error("Could not get your location");
-        setLocating(false);
-      }
-    );
-  };
 
   const handleImg = (e) => {
     const f = e.target.files[0];
@@ -413,34 +275,58 @@ const AddShopForm = () => {
   return (
     <div className="space-y-5">
       {/* Map picker */}
-      <Field label="Shop Location" hint="click on map to drop pin">
+      <Field label="Shop Location" hint="search or click on map to drop pin">
+
+        {/* Nominatim search */}
+        <div className="mb-2">
+          <MapSearchBox
+            placeholder="Search address, area, landmark..."
+            onSelect={(lat, lng, label) => {
+              setSearchCoords({ lat, lng });
+              setCoords({ lat, lng });
+              // Auto-fill address if empty
+              setForm((p) => ({ ...p, address: p.address || label }));
+            }}
+          />
+        </div>
+
         <div className="rounded-xl overflow-hidden border border-slate-700 h-52">
           <MapContainer center={[23.8103, 90.4125]} zoom={13} className="h-full w-full" zoomControl>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; OSM' />
             <MapClickHandler onPick={(lat, lng) => setCoords({ lat, lng })} />
-            <FlyToLocation coords={coords} />
+            <FlyToCoords coords={searchCoords} />
             {coords && <Marker position={[coords.lat, coords.lng]} icon={pinIcon} />}
           </MapContainer>
         </div>
-        <button type="button" onClick={handleLocate} disabled={locating}
-          className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20
-                     border border-emerald-500/30 text-emerald-400 text-xs rounded-lg
-                     transition-colors disabled:opacity-50">
-          {locating
-            ? <><Loader2 size={11} className="animate-spin" /> Locating...</>
-            : <><Locate size={11} /> Locate Me</>}
-        </button>
-        {coords ? (
-          <p className="flex items-center gap-1.5 text-emerald-400 text-xs mt-1.5">
-            <MapPin size={11} />
-            {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)} — pin placed
-          </p>
-        ) : (
-          <p className="flex items-center gap-1.5 text-slate-600 text-xs mt-1.5">
-            <Info size={11} /> No pin yet — click the map
-          </p>
-        )}
+        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+          {coords ? (
+            <p className="flex items-center gap-1.5 text-emerald-400 text-xs">
+              <MapPin size={11} />
+              {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)} — pin placed
+            </p>
+          ) : (
+            <p className="flex items-center gap-1.5 text-slate-600 text-xs">
+              <Info size={11} /> Search above or click the map to drop a pin
+            </p>
+          )}
+          <button type="button"
+            onClick={() => {
+              navigator.geolocation?.getCurrentPosition(
+                ({ coords: c }) => {
+                  const pos = { lat: c.latitude, lng: c.longitude };
+                  setCoords(pos);
+                  setSearchCoords(pos);
+                },
+                () => toast.error("Could not get your location")
+              );
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10
+                       hover:bg-emerald-500/20 border border-emerald-500/30
+                       text-emerald-400 text-xs rounded-lg transition-colors">
+            <Locate size={11} /> Locate Me
+          </button>
+        </div>
       </Field>
 
       <form onSubmit={submit} className="space-y-5">
@@ -501,8 +387,8 @@ const AddEntryForm = ({ prefillMedicineId }) => {
     api.get("/shops?limit=100").then(({ data }) => setShops(data.data || [])).catch(() => {});
   }, []);
 
-  const filteredMeds  = medicines.filter((m) => m.genericName?.toLowerCase().includes(medSearch.toLowerCase()));
-  const filteredShops = shops.filter((s) => s.name?.toLowerCase().includes(shopSearch.toLowerCase()));
+  const filteredMeds  = medicines.filter((m) => m.genericName.includes(medSearch.toLowerCase()));
+  const filteredShops = shops.filter((s) => s.name.toLowerCase().includes(shopSearch.toLowerCase()));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -596,99 +482,11 @@ const AddEntryForm = ({ prefillMedicineId }) => {
 };
 
 // ── AddPage ───────────────────────────────────────────────────────────────────
-// const AddPage = () => {
-//   const [searchParams] = useSearchParams();
-//   const typeParam      = searchParams.get("type");
-//   const medicineIdParam = searchParams.get("medicineId");
- 
-//   const defaultTab = typeParam === "entry" ? "entry"
-//                    : typeParam === "shop"  ? "shop"
-//                    : "medicine";
+const AddPage = () => {
+  const [searchParams] = useSearchParams();
+  const typeParam      = searchParams.get("type");
+  const medicineIdParam = searchParams.get("medicineId");
 
-//   const [tab, setTab] = useState(defaultTab);
-
-//    if (typeParam === "medicineImage" && medicineIdParam) {
-//     return (
-//       <div className="bg-slate-950 min-h-screen">
-//         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-//           <div className="mb-6">
-//             <h1 className="text-white font-bold text-xl">Update Medicine Photo</h1>
-//             <p className="text-slate-500 text-sm mt-1">
-//               Upload a new photo for this medicine
-//             </p>
-//           </div>
-//           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-//             <UpdateMedicineImageForm medicineId={medicineIdParam} />
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-
-//   return (
-//     <div className="bg-slate-950 min-h-screen">
-//       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-
-//         {/* Header */}
-//         <div className="mb-6">
-//           <h1 className="text-white font-bold text-xl">Contribute Data</h1>
-//           <p className="text-slate-500 text-sm mt-1">
-//             No account needed — your data goes live immediately
-//           </p>
-//         </div>
-
-//         {/* Info banner */}
-//         <div className="flex items-start gap-2.5 px-4 py-3 bg-emerald-950/30 border border-emerald-500/20
-//                         rounded-xl mb-6">
-//           <Info size={14} className="text-emerald-400 mt-0.5 shrink-0" />
-//           <p className="text-emerald-300/80 text-xs leading-relaxed">
-//             Anyone can add medicines, shops, and prices. The community votes on price accuracy,
-//             and admins moderate if needed. All data is live immediately.
-//           </p>
-//         </div>
-
-//         {/* Tab switcher */}
-//         {/* <div className="flex gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl mb-6">
-//           {TABS.map(({ id, icon: Icon, label }) => (
-//             <button
-//               key={id}
-//               onClick={() => setTab(id)}
-//               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors
-//                 ${tab === id
-//                   ? "bg-emerald-500 text-white shadow-sm"
-//                   : "text-slate-400 hover:text-white"}`}
-//             >
-//               <Icon size={14} />
-//               <span className="hidden sm:inline">{label}</span>
-//             </button>
-//           ))}
-//         </div> */}
-
-//          <div className="flex gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl mb-6">
-//           {TABS.filter(t => t.id !== "image").map(({ id, icon: Icon, label }) => (
-//             <button key={id} onClick={() => setTab(id)}
-//               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors
-//                 ${tab === id
-//                   ? "bg-emerald-500 text-white shadow-sm"
-//                   : "text-slate-400 hover:text-white"}`}>
-//               <Icon size={14} />
-//               <span className="hidden sm:inline">{label}</span>
-//             </button>
-//           ))}
-//         </div>
-
-//         {/* Form area */}
-//         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-//           {tab === "medicine" && <AddMedicineForm />}
-//           {tab === "shop"     && <AddShopForm />}
-//           {tab === "entry"    && <AddEntryForm prefillMedicineId={medicineIdParam} />}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-const AddPageInner = ({ typeParam, medicineIdParam }) => {
   const defaultTab = typeParam === "entry" ? "entry"
                    : typeParam === "shop"  ? "shop"
                    : "medicine";
@@ -699,6 +497,7 @@ const AddPageInner = ({ typeParam, medicineIdParam }) => {
     <div className="bg-slate-950 min-h-screen">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 
+        {/* Header */}
         <div className="mb-6">
           <h1 className="text-white font-bold text-xl">Contribute Data</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -706,6 +505,7 @@ const AddPageInner = ({ typeParam, medicineIdParam }) => {
           </p>
         </div>
 
+        {/* Info banner */}
         <div className="flex items-start gap-2.5 px-4 py-3 bg-emerald-950/30 border border-emerald-500/20
                         rounded-xl mb-6">
           <Info size={14} className="text-emerald-400 mt-0.5 shrink-0" />
@@ -715,19 +515,24 @@ const AddPageInner = ({ typeParam, medicineIdParam }) => {
           </p>
         </div>
 
+        {/* Tab switcher */}
         <div className="flex gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl mb-6">
           {TABS.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => setTab(id)}
+            <button
+              key={id}
+              onClick={() => setTab(id)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors
                 ${tab === id
                   ? "bg-emerald-500 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"}`}>
+                  : "text-slate-400 hover:text-white"}`}
+            >
               <Icon size={14} />
               <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
 
+        {/* Form area */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
           {tab === "medicine" && <AddMedicineForm />}
           {tab === "shop"     && <AddShopForm />}
@@ -736,33 +541,6 @@ const AddPageInner = ({ typeParam, medicineIdParam }) => {
       </div>
     </div>
   );
-};
-
-const AddPage = () => {
-  const [searchParams] = useSearchParams();
-  const typeParam       = searchParams.get("type");
-  const medicineIdParam = searchParams.get("medicineId") || searchParams.get("id");
-
-  // Early return BEFORE any hooks — safe because this component has no hooks
-  if (typeParam === "medicineImage" && medicineIdParam) {
-    return (
-      <div className="bg-slate-950 min-h-screen">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-          <div className="mb-6">
-            <h1 className="text-white font-bold text-xl">Update Medicine Photo</h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Upload a new photo for this medicine
-            </p>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <UpdateMedicineImageForm medicineId={medicineIdParam} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return <AddPageInner typeParam={typeParam} medicineIdParam={medicineIdParam} />;
 };
 
 export default AddPage;

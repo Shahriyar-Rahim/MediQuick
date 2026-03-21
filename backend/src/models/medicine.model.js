@@ -49,6 +49,16 @@ const medicineSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    uses:        { type: String, trim: true, default: "" },
+    sideEffects: { type: String, trim: true, default: "" },
+    isAutoCreated: { type: Boolean, default: false }, // flagged for admin review
+    suggestedPrice: {
+      amount:   { type: Number, default: null },
+      currency: { type: String, default: "BDT" },
+      unit:     { type: String, default: "per unit" },
+      note:     { type: String, default: "" },
+      country:  { type: String, default: "Bangladesh" },
+    },
   },
   { timestamps: true }
 );

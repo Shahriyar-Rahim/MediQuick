@@ -37,6 +37,9 @@ const protect = async (req, res, next) => {
  
 // Superadmin-only gate — use after protect
 const superAdminOnly = (req, res, next) => {
+  if (!req.admin) {
+    return res.status(401).json({ success: false, message: "Not authorized" });
+  }
   if (req.admin.role !== "superadmin") {
     return res.status(403).json({
       success: false,

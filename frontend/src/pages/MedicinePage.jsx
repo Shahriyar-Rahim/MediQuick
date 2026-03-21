@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import api from "../api/axios";
+import PriceUpdateModal from "../components/PriceUpdateModal";
 import {
   Pill, ArrowLeft, MapPin, ThumbsUp, ThumbsDown,
   CheckCircle, XCircle, Store, ArrowUpDown,
   BadgeCheck, AlertTriangle, ImagePlus, Loader2,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Pencil,
 } from "lucide-react";
 
 // ── Reusable small badge ──────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ const PriceVoteRow = ({ entry, onVote }) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-const MedicinePage = () => {
+const MedicinesPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -98,6 +99,7 @@ const MedicinePage = () => {
   const [loading,    setLoading]    = useState(true);
   const [sortBy,     setSortBy]     = useState("price"); // price | availability
   const [showDesc,   setShowDesc]   = useState(false);
+  const [updateEntry,setUpdateEntry]= useState(null); // entry being price-updated
 
   const fetchData = async () => {
     try {
@@ -146,6 +148,14 @@ const MedicinePage = () => {
 
   return (
     <div className="bg-slate-950 min-h-screen">
+      {updateEntry && (
+        <PriceUpdateModal
+          entry={updateEntry}
+          medicine={medicine}
+          onClose={() => setUpdateEntry(null)}
+          onSuccess={fetchData}
+        />
+      )}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
         {/* Back */}
@@ -329,7 +339,16 @@ const MedicinePage = () => {
                   {/* Price vote row */}
                   <div className="mt-3 pt-3 border-t border-slate-800/70 flex items-center justify-between flex-wrap gap-2">
                     <span className="text-slate-600 text-xs">Is this price accurate?</span>
-                    <PriceVoteRow entry={entry} onVote={fetchData} />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setUpdateEntry(entry)}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-slate-800
+                                   hover:bg-slate-700 border border-slate-700 text-slate-400
+                                   hover:text-white text-xs rounded-lg transition-colors">
+                        <Pencil size={11} /> Update Price
+                      </button>
+                      <PriceVoteRow entry={entry} onVote={fetchData} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -357,4 +376,4 @@ const MedicinePage = () => {
   );
 };
 
-export default MedicinePage;
+export default MedicinesPage;
