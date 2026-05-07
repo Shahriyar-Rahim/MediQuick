@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import api from "../api/axios";
 
-// ── Pigeon map pin ────────────────────────────────────────────────────────────
+//Pigeon map pin
 const ShopPin = ({ active }) => (
   <div style={{
     width: active ? 28 : 22, height: active ? 28 : 22,
@@ -23,7 +23,7 @@ const ShopPin = ({ active }) => (
   }} />
 );
 
-// ── Medicine detail card ──────────────────────────────────────────────────────
+//Medicine detail card
 const MedicineCard = ({ item, onNavigate, onSelectShop, activeShopId, country }) => {
   const [tab,  setTab]  = useState("shops"); // shops | info | price
   const [open, setOpen] = useState(false);
@@ -305,7 +305,7 @@ const MedicineCard = ({ item, onNavigate, onSelectShop, activeShopId, country })
   );
 };
 
-// ── Page component ────────────────────────────────────────────────────────────
+//Page component
 const PrescriptionResultPage = () => {
   const { id }    = useParams();
   const location  = useLocation();

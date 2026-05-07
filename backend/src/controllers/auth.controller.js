@@ -3,9 +3,7 @@ import Admin from "../models/admin.model.js";
 import generateToken from "../utils/generateToken.js";
 import authConfig from "../config/auth.config.js";
 
-// @desc    Login admin
-// @route   POST /api/auth/login
-// @access  Public
+
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -52,9 +50,6 @@ const login = async (req, res, next) => {
   }
 };
 
-// @desc    Get currently logged in admin
-// @route   GET /api/auth/me
-// @access  Private
 const getMe = async (req, res, next) => {
   try {
     res.status(200).json({

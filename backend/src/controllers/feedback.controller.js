@@ -3,9 +3,7 @@ import ipHelper from "../utils/ipHelper.js";
 
 const { getHashedIp } = ipHelper;
 
-// @desc    Submit feedback (public — no login needed)
-// @route   POST /api/feedback
-// @access  Public
+
 const submitFeedback = async (req, res, next) => {
   try {
     const { name, message, rating, type } = req.body;
@@ -55,9 +53,6 @@ const submitFeedback = async (req, res, next) => {
   }
 };
 
-// @desc    Get all feedbacks (admin)
-// @route   GET /api/feedback/admin?page=1&type=bug&isRead=false
-// @access  Private
 const getAllFeedback = async (req, res, next) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
@@ -88,9 +83,7 @@ const getAllFeedback = async (req, res, next) => {
   }
 };
 
-// @desc    Mark feedback as read (admin)
-// @route   PATCH /api/feedback/admin/:id/read
-// @access  Private
+
 const markAsRead = async (req, res, next) => {
   try {
     const feedback = await Feedback.findByIdAndUpdate(
@@ -107,9 +100,6 @@ const markAsRead = async (req, res, next) => {
   }
 };
 
-// @desc    Mark all unread as read (admin)
-// @route   PATCH /api/feedback/admin/read-all
-// @access  Private
 const markAllAsRead = async (req, res, next) => {
   try {
     await Feedback.updateMany({ isRead: false }, { isRead: true });
@@ -119,9 +109,7 @@ const markAllAsRead = async (req, res, next) => {
   }
 };
 
-// @desc    Archive feedback (admin — soft delete)
-// @route   PATCH /api/feedback/admin/:id/archive
-// @access  Private
+
 const archiveFeedback = async (req, res, next) => {
   try {
     const feedback = await Feedback.findByIdAndUpdate(
@@ -138,9 +126,6 @@ const archiveFeedback = async (req, res, next) => {
   }
 };
 
-// @desc    Delete feedback permanently (admin)
-// @route   DELETE /api/feedback/admin/:id
-// @access  Private
 const deleteFeedback = async (req, res, next) => {
   try {
     const feedback = await Feedback.findByIdAndDelete(req.params.id);
@@ -153,9 +138,6 @@ const deleteFeedback = async (req, res, next) => {
   }
 };
 
-// @desc    Get feedback summary stats (admin dashboard widget)
-// @route   GET /api/feedback/admin/stats
-// @access  Private
 const getFeedbackStats = async (req, res, next) => {
   try {
     const [total, unread, byType, avgRating] = await Promise.all([

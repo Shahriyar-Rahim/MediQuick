@@ -13,7 +13,7 @@ import {
   Layers,
 } from "lucide-react";
 
-// ── Leaflet icon fix ──────────────────────────────────────────────────────────
+//Leaflet icon fix
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -45,7 +45,7 @@ const userIcon = new L.DivIcon({
   iconSize: [18, 18], iconAnchor: [9, 9],
 });
 
-// ── Map controls ──────────────────────────────────────────────────────────────
+//Map controls
 const FlyToCoords = ({ coords }) => {
   const map = useMap();
   useEffect(() => {
@@ -78,7 +78,7 @@ const LocateMe = ({ onLocate }) => {
   );
 };
 
-// ── Tile layers ───────────────────────────────────────────────────────────────
+//Tile layers
 const TILE_LAYERS = {
   street: {
     url:         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -116,7 +116,7 @@ const TileLayerSwitcher = ({ mode }) => {
   );
 };
 
-// ── ShopsPage ─────────────────────────────────────────────────────────────────
+//ShopsPage
 const ShopsPage = () => {
   const navigate = useNavigate();
 

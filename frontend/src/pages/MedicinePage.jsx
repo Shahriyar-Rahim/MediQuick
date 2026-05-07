@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, Pencil,
 } from "lucide-react";
 
-// ── Reusable small badge ──────────────────────────────────────────────────────
+//Reusable small badge
 const Badge = ({ children, color = "emerald" }) => {
   const c = {
     emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -25,7 +25,7 @@ const Badge = ({ children, color = "emerald" }) => {
   );
 };
 
-// ── Price vote buttons ────────────────────────────────────────────────────────
+//Price vote buttons
 const PriceVoteRow = ({ entry, onVote }) => {
   const [myVote, setMyVote] = useState(null);
   const [votes,  setVotes]  = useState(entry.priceVotes || { correct: 0, incorrect: 0 });
@@ -88,7 +88,7 @@ const PriceVoteRow = ({ entry, onVote }) => {
   );
 };
 
-// ── Main component ────────────────────────────────────────────────────────────
+// Main component
 const MedicinesPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();

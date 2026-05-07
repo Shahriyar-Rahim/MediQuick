@@ -21,6 +21,9 @@ import PrescriptionResultPage from "./pages/PrescriptionResultPage";
 import LoginPage from "./pages/admin/LoginPage";
 import DashboardPage from "./pages/admin/DashboardPage";
 import AccountsPage from "./pages/admin/AccountsPage";
+import HomeAnalytics from "./components/HomeAnalytics";
+import BloodPage from "./pages/BloodPage";
+import AmbulancePage from "./pages/AmbulancePage";
 
 // Layout wrapper — NavBar + main content + Footer
 const Layout = ({ children }) => (
@@ -105,8 +108,30 @@ const App = () => {
             }
           />
           <Route 
+            path="/analytics"
+            element = {<Layout>
+              <HomeAnalytics />
+            </Layout>}
+          />
+          <Route 
             path="/prescription/:id"
             element={<PrescriptionResultPage />}
+          />
+          <Route path="/blood"
+            element={
+              <Layout>
+                <BloodPage />
+              </Layout>
+            }
+          />
+
+          <Route 
+            path="/ambulance"
+            element={
+              <Layout>
+                <AmbulancePage />
+              </Layout>
+            }
           />
 
           {/* ── Admin auth ── */}

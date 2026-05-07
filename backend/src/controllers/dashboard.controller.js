@@ -77,9 +77,7 @@ const getDashboardStats = async (req, res, next) => {
   }
 };
  
-// @desc    Get suspected fraud shops (high fraud votes, not yet blocked)
-// @route   GET /api/admin/dashboard/fraud-shops?page=1
-// @access  Private
+
 const getFraudShops = async (req, res, next) => {
   try {
     const FRAUD_THRESHOLD = parseInt(process.env.FRAUD_VOTE_THRESHOLD) || 10;
@@ -121,9 +119,7 @@ const getFraudShops = async (req, res, next) => {
   }
 };
  
-// @desc    Get entries with high incorrect price votes (price disputes)
-// @route   GET /api/admin/dashboard/price-disputes
-// @access  Private
+
 const getPriceDisputes = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -168,9 +164,7 @@ const getPriceDisputes = async (req, res, next) => {
   }
 };
  
-// @desc    Gap analysis — medicines that are searched but have very few or no entries
-// @route   GET /api/admin/dashboard/gap-analysis
-// @access  Private
+
 const getGapAnalysis = async (req, res, next) => {
   try {
     // Find all medicines
@@ -197,7 +191,6 @@ const getGapAnalysis = async (req, res, next) => {
       })
     );
  
-    // Sort: rare (0 entries) first, then by entry count ascending
     results.sort((a, b) => a.availableAt - b.availableAt);
  
     const rare = results.filter((r) => r.isRare);
@@ -223,9 +216,7 @@ const getGapAnalysis = async (req, res, next) => {
   }
 };
  
-// @desc    Most active shops (most medicine entries)
-// @route   GET /api/admin/dashboard/top-shops
-// @access  Private
+
 const getTopShops = async (req, res, next) => {
   try {
     const topShops = await MedicineEntry.aggregate([
@@ -257,9 +248,7 @@ const getTopShops = async (req, res, next) => {
   }
 };
  
-// @desc    Trending medicines today (most entries added or updated today)
-// @route   GET /api/admin/dashboard/trending
-// @access  Private
+
 const getTrendingToday = async (req, res, next) => {
   try {
     const startOfDay = new Date();
@@ -294,10 +283,7 @@ const getTrendingToday = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Recently added data across all collections (activity feed)
-// @route   GET /api/admin/dashboard/activity
-// @access  Private
+
 const getRecentActivity = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 10;

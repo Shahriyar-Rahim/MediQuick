@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, X, MapPin, Loader2, Navigation } from "lucide-react";
 
-// ── Nominatim geocoding (free, no API key, OpenStreetMap data) ────────────────
 const nominatimSearch = async (query) => {
   const res = await fetch(
     `https://nominatim.openstreetmap.org/search?` +
@@ -18,7 +17,6 @@ const nominatimSearch = async (query) => {
   return res.json();
 };
 
-// ── Result type icon ──────────────────────────────────────────────────────────
 const typeLabel = (type, cls) => {
   const map = {
     pharmacy: "💊", hospital: "🏥", clinic: "🏥",
@@ -30,11 +28,6 @@ const typeLabel = (type, cls) => {
   return map[type] || map[cls] || "📍";
 };
 
-// ── MapSearchBox ──────────────────────────────────────────────────────────────
-// Props:
-//   onSelect(lat, lng, label) — called when user picks a result
-//   placeholder — input placeholder text
-//   className   — wrapper className
 const MapSearchBox = ({ onSelect, placeholder = "Search map…", className = "" }) => {
   const [query,   setQuery]   = useState("");
   const [results, setResults] = useState([]);

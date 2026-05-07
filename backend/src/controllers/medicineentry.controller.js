@@ -2,12 +2,6 @@ import MedicineEntry from "../models/medicineEntry.model.js";
 import Medicine from "../models/medicine.model.js";
 import Shop from "../models/shop.model.js";
 
-
-// @desc    Add a medicine entry (public — links medicine + shop + price)
-// @route   POST /api/entries
-
-
-// @access  Public
 const addEntry = async (req, res, next) => {
   try {
     const { medicineId, shopId, brandName, price, isAvailable } = req.body;
@@ -67,10 +61,6 @@ const addEntry = async (req, res, next) => {
   }
 };
 
-// @desc    Get all entries for a specific medicine (public)
-//          Shows which shops carry it and at what price
-// @route   GET /api/entries/medicine/:medicineId
-// @access  Public
 const getEntriesByMedicine = async (req, res, next) => {
   try {
     const entries = await MedicineEntry.find({
@@ -88,9 +78,6 @@ const getEntriesByMedicine = async (req, res, next) => {
   }
 };
 
-// @desc    Get all entries for a specific shop (public — shown when user clicks shop on map)
-// @route   GET /api/entries/shop/:shopId
-// @access  Public
 const getEntriesByShop = async (req, res, next) => {
   try {
     const { category } = req.query;
@@ -114,9 +101,6 @@ const getEntriesByShop = async (req, res, next) => {
   }
 };
 
-// @desc    Get single entry by ID (public)
-// @route   GET /api/entries/:id
-// @access  Public
 const getEntry = async (req, res, next) => {
   try {
     const entry = await MedicineEntry.findOne({
@@ -138,9 +122,6 @@ const getEntry = async (req, res, next) => {
   }
 };
 
-// @desc    Update entry — price or availability (public)
-// @route   PATCH /api/entries/:id
-// @access  Public
 const updateEntry = async (req, res, next) => {
   try {
     const { price, isAvailable, brandName } = req.body;
@@ -172,9 +153,6 @@ const updateEntry = async (req, res, next) => {
   }
 };
 
-// @desc    Price comparison — all shops for a medicine sorted by price (public)
-// @route   GET /api/entries/compare/:medicineId
-// @access  Public
 const comparePrices = async (req, res, next) => {
   try {
     const entries = await MedicineEntry.find({
@@ -219,9 +197,6 @@ const comparePrices = async (req, res, next) => {
   }
 };
 
-// @desc    Get trending medicine entries — most bought/viewed today (public)
-// @route   GET /api/entries/trending
-// @access  Public
 const getTrending = async (req, res, next) => {
   try {
     // Trending = entries updated most recently today (proxy for activity)
@@ -245,11 +220,8 @@ const getTrending = async (req, res, next) => {
   }
 };
 
-// ─── ADMIN ONLY ────────────────────────────────────────────────────────────────
+//ADMIN ONLY
 
-// @desc    Block / unblock an entry (admin)
-// @route   PATCH /api/entries/:id/block
-// @access  Private
 const toggleBlockEntry = async (req, res, next) => {
   try {
     const entry = await MedicineEntry.findById(req.params.id);
@@ -272,9 +244,7 @@ const toggleBlockEntry = async (req, res, next) => {
   }
 };
 
-// @desc    Delete an entry (admin)
-// @route   DELETE /api/entries/:id
-// @access  Private
+
 const deleteEntry = async (req, res, next) => {
   try {
     const entry = await MedicineEntry.findByIdAndDelete(req.params.id);
@@ -290,9 +260,7 @@ const deleteEntry = async (req, res, next) => {
   }
 };
 
-// @desc    Get ALL entries including blocked (admin dashboard)
-// @route   GET /api/entries/admin/all
-// @access  Private
+
 const getAllEntriesAdmin = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;

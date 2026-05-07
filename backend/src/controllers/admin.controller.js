@@ -1,9 +1,6 @@
 import Admin from "../models/admin.model.js";
 import generateToken from "../utils/generateToken.js";
 
-// @desc    Create a new admin account
-// @route   POST /api/admin/accounts
-// @access  Private (superadmin only)
 const createAccount = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
@@ -40,9 +37,6 @@ const createAccount = async (req, res, next) => {
   }
 };
 
-// @desc    Get all admin accounts
-// @route   GET /api/admin/accounts
-// @access  Private (any admin)
 const getAllAccounts = async (req, res, next) => {
   try {
     const admins = await Admin.find().select("-password").sort({ createdAt: -1 });
@@ -57,9 +51,6 @@ const getAllAccounts = async (req, res, next) => {
   }
 };
 
-// @desc    Get single admin account
-// @route   GET /api/admin/accounts/:id
-// @access  Private (any admin)
 const getAccount = async (req, res, next) => {
   try {
     const admin = await Admin.findById(req.params.id).select("-password");
@@ -74,11 +65,6 @@ const getAccount = async (req, res, next) => {
   }
 };
 
-// @desc    Update account status or role
-//          - activate / deactivate an admin
-//          - promote to superadmin or demote to admin
-// @route   PATCH /api/admin/accounts/:id/status
-// @access  Private (superadmin only)
 const updateAccountStatus = async (req, res, next) => {
   try {
     const { isActive, role } = req.body;
@@ -115,9 +101,6 @@ const updateAccountStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Delete an admin account
-// @route   DELETE /api/admin/accounts/:id
-// @access  Private (superadmin only)
 const deleteAccount = async (req, res, next) => {
   try {
     if (req.params.id === req.admin._id.toString()) {
@@ -136,9 +119,6 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
-// @desc    Update own password
-// @route   PATCH /api/admin/accounts/me/password
-// @access  Private (any admin — own account only)
 const updatePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;

@@ -1,8 +1,5 @@
 import Medicine from "../models/medicine.model.js";
 
-// @desc    Add a new medicine (public)
-// @route   POST /api/medicines
-// @access  Public
 const addMedicine = async (req, res, next) => {
   try {
     const { genericName, brandNames, category, description } = req.body;
@@ -35,9 +32,6 @@ const addMedicine = async (req, res, next) => {
   }
 };
 
-// @desc    Search medicines by generic name or brand name (public)
-// @route   GET /api/medicines/search?q=paracetamol
-// @access  Public
 const searchMedicines = async (req, res, next) => {
   try {
     const { q } = req.query;
@@ -64,9 +58,6 @@ const searchMedicines = async (req, res, next) => {
   }
 };
 
-// @desc    Get all medicines (public, with pagination)
-// @route   GET /api/medicines?page=1&limit=20&category=antibiotic
-// @access  Public
 const getAllMedicines = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -93,9 +84,6 @@ const getAllMedicines = async (req, res, next) => {
   }
 };
 
-// @desc    Get single medicine by ID (public)
-// @route   GET /api/medicines/:id
-// @access  Public
 const getMedicine = async (req, res, next) => {
   try {
     const medicine = await Medicine.findOne({ _id: req.params.id, isBlocked: false });
@@ -110,9 +98,6 @@ const getMedicine = async (req, res, next) => {
   }
 };
 
-// @desc    Update medicine details (public — anyone can suggest edits)
-// @route   PATCH /api/medicines/:id
-// @access  Public
 const updateMedicine = async (req, res, next) => {
   try {
     const { genericName, brandNames, category, description } = req.body;
@@ -139,9 +124,7 @@ const updateMedicine = async (req, res, next) => {
   }
 };
 
-// @desc    Update medicine image (public)
-// @route   PATCH /api/medicines/:id/image
-// @access  Public
+
 const updateMedicineImage = async (req, res, next) => {
   try {
     const { url, publicId } = req.body;
@@ -166,11 +149,8 @@ const updateMedicineImage = async (req, res, next) => {
   }
 };
 
-// ─── ADMIN ONLY ────────────────────────────────────────────────────────────────
+//DMIN ONLY
 
-// @desc    Block / unblock a medicine (admin)
-// @route   PATCH /api/medicines/:id/block
-// @access  Private
 const toggleBlockMedicine = async (req, res, next) => {
   try {
     const medicine = await Medicine.findById(req.params.id);
@@ -191,9 +171,6 @@ const toggleBlockMedicine = async (req, res, next) => {
   }
 };
 
-// @desc    Delete a medicine (admin)
-// @route   DELETE /api/medicines/:id
-// @access  Private
 const deleteMedicine = async (req, res, next) => {
   try {
     const medicine = await Medicine.findByIdAndDelete(req.params.id);
@@ -207,9 +184,6 @@ const deleteMedicine = async (req, res, next) => {
   }
 };
 
-// @desc    Get ALL medicines including blocked ones (admin dashboard)
-// @route   GET /api/medicines/admin/all
-// @access  Private
 const getAllMedicinesAdmin = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -237,9 +211,7 @@ const getAllMedicinesAdmin = async (req, res, next) => {
   }
 };
 
-// @desc  Auto-enrich and create medicine from web search
-// @route POST /api/medicines/enrich
-// @access Public (called from scanner)
+
 const enrichMedicine = async (req, res, next) => {
   try {
     const { medicineName, apiKey, country } = req.body;

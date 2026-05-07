@@ -5,10 +5,6 @@ import ipHelper from "../utils/ipHelper.js";
 
 const { getHashedIp } = ipHelper;
 
-// @desc    Vote on a medicine entry price — correct or incorrect (public)
-// @route   POST /api/votes/price/:entryId
-
-// @access  Public
 const votePriceCorrectness = async (req, res, next) => {
   try {
     const { value } = req.body; // "correct" or "incorrect"
@@ -85,9 +81,6 @@ const votePriceCorrectness = async (req, res, next) => {
   }
 };
 
-// @desc    Vote on a shop — fraud or legit (public)
-// @route   POST /api/votes/fraud/:shopId
-// @access  Public
 const voteFraud = async (req, res, next) => {
   try {
     const { value } = req.body; // "fraud" or "legit"
@@ -164,9 +157,6 @@ const voteFraud = async (req, res, next) => {
   }
 };
 
-// @desc    Get vote summary for a medicine entry (public)
-// @route   GET /api/votes/price/:entryId
-// @access  Public
 const getPriceVotes = async (req, res, next) => {
   try {
     const entry = await MedicineEntry.findById(req.params.entryId).select(
@@ -194,9 +184,6 @@ const getPriceVotes = async (req, res, next) => {
   }
 };
 
-// @desc    Get fraud vote summary for a shop (public)
-// @route   GET /api/votes/fraud/:shopId
-// @access  Public
 const getFraudVotes = async (req, res, next) => {
   try {
     const shop = await Shop.findById(req.params.shopId).select("fraudVotes");
@@ -224,9 +211,6 @@ const getFraudVotes = async (req, res, next) => {
   }
 };
 
-// @desc    Check if current IP has already voted (public — used to show correct UI state)
-// @route   GET /api/votes/check?type=price&targetId=xxx  OR  type=fraud&targetId=xxx
-// @access  Public
 const checkMyVote = async (req, res, next) => {
   try {
     const { type, targetId } = req.query;
@@ -258,11 +242,8 @@ const checkMyVote = async (req, res, next) => {
   }
 };
 
-// ─── ADMIN ONLY ────────────────────────────────────────────────────────────────
+//ADMIN ONLY
 
-// @desc    Get all votes (admin — for audit / dashboard)
-// @route   GET /api/votes/admin/all?voteType=fraud
-// @access  Private
 const getAllVotesAdmin = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -294,9 +275,6 @@ const getAllVotesAdmin = async (req, res, next) => {
   }
 };
 
-// @desc    Delete a specific vote (admin — cleanup)
-// @route   DELETE /api/votes/admin/:id
-// @access  Private
 const deleteVote = async (req, res, next) => {
   try {
     const vote = await Vote.findById(req.params.id);

@@ -1,9 +1,5 @@
 import Shop from "../models/shop.model.js";
 
-
-// @desc    Add a new shop (public — coordinates come from Leaflet map click)
-// @route   POST /api/shops
-// @access  Public
 const addShop = async (req, res, next) => {
   try {
     const { name, address, contact, latitude, longitude } = req.body;
@@ -32,9 +28,6 @@ const addShop = async (req, res, next) => {
   }
 };
  
-// @desc    Get nearby shops within a radius (public — used for Leaflet map)
-// @route   GET /api/shops/nearby?lat=23.8&lng=90.4&radius=5000
-// @access  Public
 const getNearbyShops = async (req, res, next) => {
   try {
     const { lat, lng, radius } = req.query;
@@ -61,9 +54,6 @@ const getNearbyShops = async (req, res, next) => {
   }
 };
  
-// @desc    Get all shops (public, with pagination)
-// @route   GET /api/shops?page=1&limit=20
-// @access  Public
 const getAllShops = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -86,10 +76,7 @@ const getAllShops = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Get single shop by ID (public)
-// @route   GET /api/shops/:id
-// @access  Public
+
 const getShop = async (req, res, next) => {
   try {
     const shop = await Shop.findOne({ _id: req.params.id, isBlocked: false });
@@ -103,10 +90,7 @@ const getShop = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Update shop details (public — anyone can edit)
-// @route   PATCH /api/shops/:id
-// @access  Public
+
 const updateShop = async (req, res, next) => {
   try {
     const { name, address, contact, latitude, longitude } = req.body;
@@ -137,10 +121,7 @@ const updateShop = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Update shop image (public)
-// @route   PATCH /api/shops/:id/image
-// @access  Public
+
 const updateShopImage = async (req, res, next) => {
   try {
     const { url, publicId } = req.body;
@@ -165,11 +146,8 @@ const updateShopImage = async (req, res, next) => {
   }
 };
  
-// ─── ADMIN ONLY ────────────────────────────────────────────────────────────────
- 
-// @desc    Block / unblock a shop (admin)
-// @route   PATCH /api/shops/:id/block
-// @access  Private
+//ADMIN ONLY
+
 const toggleBlockShop = async (req, res, next) => {
   try {
     const shop = await Shop.findById(req.params.id);
@@ -189,10 +167,7 @@ const toggleBlockShop = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Delete a shop (admin)
-// @route   DELETE /api/shops/:id
-// @access  Private
+
 const deleteShop = async (req, res, next) => {
   try {
     const shop = await Shop.findByIdAndDelete(req.params.id);
@@ -205,10 +180,7 @@ const deleteShop = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Get ALL shops including blocked (admin dashboard)
-// @route   GET /api/shops/admin/all
-// @access  Private
+
 const getAllShopsAdmin = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;

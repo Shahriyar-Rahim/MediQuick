@@ -3,9 +3,6 @@ import ipHelper from "../utils/ipHelper.js";
 
 const { getHashedIp } = ipHelper;
 
-// @desc   Save a prescription scan result
-// @route  POST /api/prescriptions
-// @access Public
 const savePrescription = async (req, res, next) => {
   try {
     const {
@@ -99,9 +96,6 @@ const savePrescription = async (req, res, next) => {
   }
 };
 
-// @desc   Get a single prescription by ID (public — share link)
-// @route  GET /api/prescriptions/:id
-// @access Public
 const getPrescription = async (req, res, next) => {
   try {
     const prescription = await Prescription
@@ -125,9 +119,7 @@ const getPrescription = async (req, res, next) => {
   }
 };
 
-// @desc   Get all prescriptions (admin)
-// @route  GET /api/prescriptions/admin?page=1&limit=20
-// @access Private
+
 const getAllPrescriptions = async (req, res, next) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
@@ -158,9 +150,6 @@ const getAllPrescriptions = async (req, res, next) => {
   }
 };
 
-// @desc   Get prescription stats (admin dashboard)
-// @route  GET /api/prescriptions/admin/stats
-// @access Private
 const getPrescriptionStats = async (req, res, next) => {
   try {
     const [
@@ -213,9 +202,6 @@ const getPrescriptionStats = async (req, res, next) => {
   }
 };
 
-// @desc   Delete prescription (admin)
-// @route  DELETE /api/prescriptions/admin/:id
-// @access Private
 const deletePrescription = async (req, res, next) => {
   try {
     const p = await Prescription.findByIdAndDelete(req.params.id);

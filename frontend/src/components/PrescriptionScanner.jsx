@@ -69,7 +69,6 @@ const runGeminiOCR = async (base64, mime, apiKey) => {
   }
 };
 
-// ── gemini-2.5-flash — medicine web enrichment (Google Search grounding) ──────
 const ENRICH_PROMPT = (name, country) => `
 Search the web for complete medical information about: "${name}"
 
@@ -118,7 +117,7 @@ const runGeminiEnrich = async (
   return JSON.parse(match[0]);
 };
 
-// ── DB helpers ────────────────────────────────────────────────────────────────
+// dB helper
 const searchMedicine = async (name) => {
   try {
     const { data } = await api.get(
@@ -153,7 +152,7 @@ const autoCreateMedicine = async (name, apiKey, country) => {
   }
 };
 
-// ── Get user country ──────────────────────────────────────────────────────────
+//Get user country
 const getUserCountry = async () => {
   try {
     const res = await fetch("https://ipapi.co/json/");
@@ -164,7 +163,7 @@ const getUserCountry = async () => {
   }
 };
 
-// ── Main component ────────────────────────────────────────────────────────────
+// Main component
 const PrescriptionScanner = () => {
   const navigate = useNavigate();
   const fileRef = useRef(null);
@@ -258,7 +257,7 @@ const PrescriptionScanner = () => {
     const startTime = Date.now();
 
     try {
-      // ── Step 1: OCR ────────────────────────────────────────────────────────
+      //Step 1: OCR
       setProgress(8);
       setProgressMsg("Reading prescription...");
       setProgressSub("OCRanalyzing image");
@@ -284,10 +283,10 @@ const PrescriptionScanner = () => {
       );
       setProgressSub("Searching Medi-Quick database...");
 
-      // ── Step 2: Get user country for price localization ────────────────────
+      // Step 2: Get user country for price localization
       const country = await getUserCountry();
 
-      // ── Step 3: Process each medicine ─────────────────────────────────────
+      // Step 3: Process each medicine
       const stepSize = 65 / names.length;
       const detectedMedicines = [];
       let autoCreatedCount = 0;
@@ -362,7 +361,7 @@ const PrescriptionScanner = () => {
         setProgress((p) => Math.min(90, p + stepSize));
       }
 
-      // ── Step 4: Save prescription to DB ───────────────────────────────────
+      // Step 4: Save prescription to DB
       setProgress(93);
       setProgressMsg("Saving scan...");
       setProgressSub(
@@ -405,7 +404,7 @@ const PrescriptionScanner = () => {
     }
   };
 
-  // ── Floating button ─────────────────────────────────────────────────────────
+  // Floating button
   if (!open)
     return (
       <button
@@ -427,7 +426,7 @@ const PrescriptionScanner = () => {
       </button>
     );
 
-  // ── Modal ───────────────────────────────────────────────────────────────────
+  // Modal
   return (
     <div
       className="fixed inset-0 z-[7000] flex items-end sm:items-center justify-center p-0 sm:p-4"

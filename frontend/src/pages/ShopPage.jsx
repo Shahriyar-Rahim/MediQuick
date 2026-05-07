@@ -23,7 +23,7 @@ const CATEGORIES = [
   "antidiabetic","antihypertensive","antihistamine","vitamin","supplement","other",
 ];
 
-// ── Fraud vote row ────────────────────────────────────────────────────────────
+//Fraud vote row
 const FraudVoteRow = ({ shop, onVote }) => {
   const [myVote, setMyVote] = useState(null);
   const [votes,  setVotes]  = useState(shop.fraudVotes || { fraud: 0, legit: 0 });
@@ -79,7 +79,7 @@ const FraudVoteRow = ({ shop, onVote }) => {
   );
 };
 
-// ── ShopPage ──────────────────────────────────────────────────────────────────
+//ShopPage
 const ShopPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();

@@ -19,10 +19,7 @@ const streamUpload = (buffer, folder) => {
     streamifier.createReadStream(buffer).pipe(stream);
   });
 };
- 
-// @desc    Upload image for a medicine (public)
-// @route   POST /api/upload/medicine/:id
-// @access  Public
+
 const uploadMedicineImage = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -53,10 +50,7 @@ const uploadMedicineImage = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Upload image for a shop (public)
-// @route   POST /api/upload/shop/:id
-// @access  Public
+
 const uploadShopImage = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -87,10 +81,7 @@ const uploadShopImage = async (req, res, next) => {
     next(error);
   }
 };
- 
-// @desc    Delete an image from Cloudinary (admin only)
-// @route   DELETE /api/upload/delete
-// @access  Private
+
 const deleteImage = async (req, res, next) => {
   try {
     const { publicId } = req.body;

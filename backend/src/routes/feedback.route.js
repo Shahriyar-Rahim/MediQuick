@@ -4,10 +4,8 @@ import protectMiddleware from "../middlewares/protect.js";
 
 const router = express.Router();
 
-// ── Public ────────────────────────────────────────────────────────────────────
 router.post("/", feedbackController.submitFeedback);
 
-// ── Admin only ────────────────────────────────────────────────────────────────
 router.use(protectMiddleware.protect);
 router.get("/admin/stats",          feedbackController.getFeedbackStats);
 router.get("/admin",                feedbackController.getAllFeedback);

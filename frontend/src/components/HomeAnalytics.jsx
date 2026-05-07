@@ -11,7 +11,6 @@ import {
   Calendar, RefreshCw, Pill, Store, FileText, ThumbsUp,
 } from "lucide-react";
 
-// ── Color palette ─────────────────────────────────────────────────────────────
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#84cc16"];
 
 const CATEGORY_COLORS = {
@@ -28,7 +27,6 @@ const CATEGORY_COLORS = {
   other:            "#64748b",
 };
 
-// ── Custom tooltip ────────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -43,7 +41,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-// ── Period toggle ─────────────────────────────────────────────────────────────
 const PeriodToggle = ({ value, onChange }) => (
   <div className="flex items-center gap-1 p-1 bg-slate-800 border border-slate-700 rounded-lg">
     {["weekly", "monthly"].map((p) => (
@@ -59,7 +56,6 @@ const PeriodToggle = ({ value, onChange }) => (
   </div>
 );
 
-// ── Chart card wrapper ────────────────────────────────────────────────────────
 const ChartCard = ({ icon: Icon, title, accent = "emerald", children, className = "" }) => {
   const ring = {
     emerald: "text-emerald-400 bg-emerald-400/10",
@@ -81,7 +77,6 @@ const ChartCard = ({ icon: Icon, title, accent = "emerald", children, className 
   );
 };
 
-// ── Build date buckets ────────────────────────────────────────────────────────
 const buildDateLabels = (period) => {
   const now = new Date();
   if (period === "weekly") {
@@ -125,7 +120,6 @@ const bucketByDate = (items, period, dateField = "createdAt") => {
   });
 };
 
-// ── Main analytics component ──────────────────────────────────────────────────
 const HomeAnalytics = () => {
   const [period,    setPeriod]    = useState("weekly");
   const [loading,   setLoading]   = useState(true);
@@ -159,7 +153,6 @@ const HomeAnalytics = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  // ── Derived chart data ──────────────────────────────────────────────────────
 
   // 1. Medicines added over time (bar)
   const medicinesOverTime = bucketByDate(medicines, period);
@@ -209,7 +202,6 @@ const HomeAnalytics = () => {
     entries:   entriesOverTime[i]?.count   || 0,
   }));
 
-  // ── Summary stats ───────────────────────────────────────────────────────────
   const periodStart = (() => {
     const d = new Date();
     d.setDate(d.getDate() - (period === "weekly" ? 7 : 28));

@@ -6,7 +6,6 @@ import {
   X, ChevronLeft, ChevronRight, ExternalLink, Eye,
 } from "lucide-react";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const TYPE_META = {
   general:    { icon: HelpCircle, color: "text-slate-400",   bg: "bg-slate-700/50",   label: "General"    },
   suggestion: { icon: Lightbulb,  color: "text-amber-400",   bg: "bg-amber-500/10",   label: "Suggestion" },
@@ -28,7 +27,6 @@ const fmt = (d) => new Date(d).toLocaleString("en-BD", {
   hour: "2-digit", minute: "2-digit",
 });
 
-// ── Toast popup for a single feedback ────────────────────────────────────────
 const FeedbackToast = ({ fb, onClose, onAction, busy }) => {
   const meta = TYPE_META[fb.type] || TYPE_META.general;
   const Icon = meta.icon;
@@ -136,7 +134,6 @@ const FeedbackToast = ({ fb, onClose, onAction, busy }) => {
   );
 };
 
-// ── View All modal ────────────────────────────────────────────────────────────
 const ViewAllModal = ({ onClose, onAction, busy }) => {
   const [feedbacks,  setFeedbacks]  = useState([]);
   const [total,      setTotal]      = useState(0);
@@ -279,7 +276,6 @@ const ViewAllModal = ({ onClose, onAction, busy }) => {
   );
 };
 
-// ── Main widget ───────────────────────────────────────────────────────────────
 const AdminFeedback = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [stats,     setStats]     = useState(null);

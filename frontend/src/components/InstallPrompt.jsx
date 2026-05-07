@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Download, ChevronRight } from "lucide-react";
 
-// ── Detect environment ────────────────────────────────────────────────────────
 const getEnv = () => {
   const ua        = navigator.userAgent.toLowerCase();
   const isIOS     = /iphone|ipad|ipod/.test(ua);
@@ -19,7 +18,6 @@ const getEnv = () => {
   return { isIOS, isMac, isAndroid, isWindows, isSafari, isChrome, isEdge, isFirefox, supportsNative };
 };
 
-// ── Instructions per OS ───────────────────────────────────────────────────────
 const getInstructions = (env) => {
   if (env.isIOS) return {
     os: "iOS — Safari",
@@ -89,7 +87,6 @@ const COLOR = {
   amber:   { bar: "from-amber-500 to-amber-400",     badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",       dot: "bg-amber-400",   num: "bg-amber-500/10 text-amber-400 border-amber-500/20"       },
 };
 
-// ── Instructions Modal ────────────────────────────────────────────────────────
 const InstructionsModal = ({ env, onClose }) => {
   const [anim, setAnim] = useState(false);
   const info = getInstructions(env);
@@ -184,7 +181,6 @@ const InstructionsModal = ({ env, onClose }) => {
   );
 };
 
-// ── Main InstallPrompt ────────────────────────────────────────────────────────
 const InstallPrompt = () => {
   const [show,        setShow]        = useState(false);
   const [animate,     setAnimate]     = useState(false);
