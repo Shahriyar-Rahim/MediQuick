@@ -204,6 +204,11 @@ const HomePage = () => {
   const [priceRows,   setPriceRows]   = useState([]);
   const [stockAlerts, setStockAlerts] = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const navItems = [
+    { label: "Medicines", icon: Pill,  color: "text-emerald-600", path: "/medicines" },
+    { label: "Shops",     icon: Store, color: "text-blue-600",    path: "/shops"     },
+    { label: "Community", icon: Heart, color: "text-red-500",     path: "#" },
+  ];
 
   useEffect(() => {
     api.get(`/shops/nearby?lat=${userPos[0]}&lng=${userPos[1]}&radius=8000`)
@@ -252,21 +257,21 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              {/* <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-[#1E40AF] flex items-center justify-center">
                   <Activity size={15} className="text-white" strokeWidth={2.5} />
                 </div>
                 <span className="text-[#1E40AF] text-xs font-bold uppercase tracking-widest">
                   MediQuick
                 </span>
-              </div>
+              </div> */}
               <h1 className="text-slate-800 text-2xl sm:text-3xl font-extrabold
                              leading-tight tracking-tight">
                 Find medicines,{" "}
                 <span style={{ color: "#10B981" }}>near you</span>
               </h1>
               <p className="text-slate-500 text-sm mt-1.5 max-w-md">
-                Community-powered availability · real prices · Bangladesh
+                Community-powered availability · real prices · 
               </p>
               <div className="flex items-center gap-2 mt-4 flex-wrap">
                 <Link to="/medicines"
@@ -286,19 +291,21 @@ const HomePage = () => {
 
             {/* Live stats strip */}
             <div className="flex items-center gap-3 flex-wrap">
-              {[
-                { label: "Medicines",  icon: Pill,     color: "text-emerald-600" },
-                { label: "Shops",      icon: Store,    color: "text-blue-600"    },
-                { label: "Community",  icon: Heart,    color: "text-red-500"     },
-              ].map(({ label, icon: Icon, color }) => (
-                <div key={label}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-100
-                             rounded-2xl shadow-sm">
-                  <Icon size={14} className={color} />
-                  <span className="text-slate-600 text-xs font-medium">{label}</span>
-                </div>
-              ))}
-            </div>
+      {navItems.map(({ label, icon: Icon, color, path }) => (
+        <button 
+          key={label}
+          type="button"
+          onClick={() => navigate(path)}
+          className="flex sm:hidden items-center gap-2 px-4 py-2.5 
+                     bg-white border border-slate-100 rounded-2xl shadow-sm
+                     active:scale-95 active:bg-slate-50 transition-all duration-75
+                     hover:border-blue-200 outline-none"
+        >
+          <Icon size={14} className={color} />
+          <span className="text-slate-600 text-xs font-medium">{label}</span>
+        </button>
+      ))}
+    </div>
           </div>
         </div>
       </div>
