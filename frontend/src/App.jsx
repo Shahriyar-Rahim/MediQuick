@@ -24,6 +24,8 @@ import AccountsPage from "./pages/admin/AccountsPage";
 import HomeAnalytics from "./components/HomeAnalytics";
 import BloodPage from "./pages/BloodPage";
 import AmbulancePage from "./pages/AmbulancePage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 
 // Layout wrapper — NavBar + main content + Footer
 const Layout = ({ children }) => (
@@ -130,6 +132,22 @@ const App = () => {
             element={
               <Layout>
                 <AmbulancePage />
+              </Layout>
+            }
+          />
+          <Route 
+            path="/about"
+            element={ 
+              <Layout>
+                <AboutPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <Layout>
+                <ContactPage />
               </Layout>
             }
           />
