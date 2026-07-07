@@ -5,7 +5,7 @@ const getBaseUrl = () => {
     }
     
     // Default to production Vercel link
-    return "https://medi-quick-demo.vercel.app/";
+    return "https://medi-quick-fawn.vercel.app";
     // return "http://localhost:5173";
 }
 
